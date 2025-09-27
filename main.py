@@ -12,7 +12,7 @@ users = db["users"]
 
 @app.get("/")
 async def root():
-    return {"users": list(users.find())}
+    return {"users": list(users.find({"name": "James"}, {"_id": 0, "email": 1, "name": 1, "password": 1}))}
 
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Optional[str] = None):
