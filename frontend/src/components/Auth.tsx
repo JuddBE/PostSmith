@@ -35,9 +35,11 @@ const Auth = () => {
           <label>Password</label>
           <input type="text" value={password} required
             onChange={(e) => setPassword(e.target.value)} />
-          <button type="button" onClick={() => setLogin(false)}>
-            Register</button>
-          <button type="submit">Submit</button>
+          <div class="buttons">
+            <button type="submit">Submit</button>
+            <button class="small" type="button" onClick={() => setLogin(false)}>
+              Register</button>
+          </div>
         </form>
       </div>
     );
@@ -56,9 +58,11 @@ const Auth = () => {
           <input type="password" value={confirmPassword} required
             onChange={(e) => setConfirmPassword(e.target.value)}
             ref={confirmRef}/>
-          <button type="button" onClick={() => setLogin(true)}>
-            Login</button>
-          <button type="submit">Submit</button>
+          <div class="buttons">
+            <button type="submit">Submit</button>
+            <button class="small" type="button" onClick={() => setLogin(true)}>
+              Login</button>
+          </div>
         </form>
       </div>
     );

@@ -19,3 +19,19 @@ form > h1 {
 form > button {
   padding: 2pt;
 }
+
+.buttons {
+  margin: 30pt;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.buttons > * {
+  width: 100%;
+  margin: 5pt;
+}
+
+.small {
+  width: 40%;
+  font-size: 10pt;
+}
