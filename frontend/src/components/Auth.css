@@ -1,0 +1,21 @@
+form {
+  display: flex;
+  flex-direction: column;
+  background: black;
+  padding: 20pt;
+  border-radius: 15pt;
+}
+
+form > *:not(h1) {
+  margin: 5pt 20pt;
+  font-size: 16pt;
+}
+
+form > h1 {
+  margin: 30pt;
+  font-size: 30pt;
+}
+
+form > button {
+  padding: 2pt;
+}
