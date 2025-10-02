@@ -6,12 +6,9 @@ form {
   display: flex;
   flex-direction: column;
   background: black;
-  padding: 20pt;
   border-radius: 20pt;
   width: 480px;
-  height: 440px;
-  justify-content: center;
-  align-content: center;
+  padding: 60px 0;
 }
 
 form > h1 {
