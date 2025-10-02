@@ -29,17 +29,14 @@ const Auth = () => {
       <div>
         <form onSubmit={subLogin}>
           <h1>Login</h1>
-          <label>Email</label>
-          <input type="email" value={email} required
+          <input type="email" value={email} placeholder="Email" required
             onChange={(e) => setEmail(e.target.value)} />
-          <label>Password</label>
-          <input type="text" value={password} required
+          <input type="text" value={password} placeholder="Password" required
             onChange={(e) => setPassword(e.target.value)} />
-          <div class="buttons">
-            <button type="submit">Submit</button>
-            <button class="small" type="button" onClick={() => setLogin(false)}>
-              Register</button>
-          </div>
+          <button class="submit" type="submit">Submit</button>
+          <p>Don't have an account?</p>
+          <button class="switch" type="button" onClick={() => setLogin(false)}>
+            Register</button>
         </form>
       </div>
     );
@@ -48,21 +45,18 @@ const Auth = () => {
       <div>
         <form onSubmit={subRegistration}>
           <h1>Register</h1>
-          <label>Email</label>
-          <input type="email" value={email} required
+          <input type="email" value={email} placeholder="Email" required
             onChange={(e) => setEmail(e.target.value)} />
-          <label>Password</label>
-          <input type="password" value={password} required
+          <input type="password" value={password} placeholder="Password" required
             onChange={(e) => setPassword(e.target.value)} />
-          <label>Confirm Password</label>
-          <input type="password" value={confirmPassword} required
+          <input type="password" value={confirmPassword}
+            placeholder="Confirm Password" required
             onChange={(e) => setConfirmPassword(e.target.value)}
             ref={confirmRef}/>
-          <div class="buttons">
-            <button type="submit">Submit</button>
-            <button class="small" type="button" onClick={() => setLogin(true)}>
-              Login</button>
-          </div>
+          <button class="submit" type="submit">Submit</button>
+          <p>Already have an account?</p>
+          <button class="switch" type="button" onClick={() => setLogin(true)}>
+            Login</button>
         </form>
       </div>
     );

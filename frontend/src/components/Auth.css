@@ -1,37 +1,52 @@
+body {
+  background-image: linear-gradient(to right, black, #2015A0);
+}
+
 form {
   display: flex;
   flex-direction: column;
   background: black;
   padding: 20pt;
-  border-radius: 15pt;
-}
-
-form > *:not(h1) {
-  margin: 5pt 20pt;
-  font-size: 16pt;
+  border-radius: 20pt;
+  width: 480px;
+  height: 440px;
+  justify-content: center;
+  align-content: center;
 }
 
 form > h1 {
-  margin: 30pt;
-  font-size: 30pt;
+  margin-top: 0;
 }
 
-form > button {
-  padding: 2pt;
+form > input,button {
+  border-radius: 20pt;
+  padding: 6px;
+  margin: 10px;
+
+  text-align: center;
+  font-size: 14pt;
+  color: black;
 }
 
-.buttons {
-  margin: 30pt;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.buttons > * {
-  width: 100%;
-  margin: 5pt;
+form > input {
+  background: white;
+  width: 60%;
+  margin: 10px auto;
 }
 
-.small {
-  width: 40%;
-  font-size: 10pt;
+.submit {
+  background: #8AE165;
+  width: 55%;
+  margin: 10px auto;
+}
+
+p {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.switch {
+  background: #8A9FFF;
+  width: 30%;
+  margin: 0px auto;
 }
