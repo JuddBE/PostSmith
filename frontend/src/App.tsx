@@ -23,7 +23,7 @@ function App() {
   } else if (authenticated == false) {
     return <Auth />;
   }
-	
+
   // Main app component
   return (
     <>
