@@ -16,6 +16,11 @@ react_build = "../frontend/dist/"
 app.mount("/assets", StaticFiles(directory=react_build + "assets"), name="assets")
 
 
+@app.post("/api/test")
+async def test():
+    data = list(users.find())
+    print(data)
+
 # Page service
 @app.get("/{full_path:path}")
 async def serve(full_path: str):
