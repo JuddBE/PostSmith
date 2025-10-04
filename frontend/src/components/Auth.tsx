@@ -1,46 +1,101 @@
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
+
 import './Auth.css'
 
 
-const Auth = () => {
+type AuthProps = {
+  setToken: React.Dispatch<React.SetStateAction<string | null>>
+};
+const Auth = ({ setToken } : AuthProps) => {
   const [login, setLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const confirmRef = useRef(null);
+  const confirmRef = useRef<HTMLInputElement | null>(null);
 
+  // Check that passwords are equal
+  useEffect(() => {
+    confirmRef.current?.setCustomValidity(
+      confirmPassword != password ? "Passwords must match" : ""
+    );
+  }, [confirmPassword]);
 
-  const subLogin = (e) => {
+  // Attempt to login
+  const subLogin: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
-  };
-  const subRegistration = (e) => {
-    e.preventDefault();
-  
-    if (!e.target.checkValidity()) {
-      return;
-    } else if (confirmPassword != password) {
-      confirmRef.current.setCustomValidity("Passwords must match");
+
+    // Send info to API
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        "email": email,
+        "password": password
+      })
+    });
+    const body = await response.json();
+
+    // Request failed
+    if (response.status != 200) {
+      alert(body.detail);
       return;
     }
+
+    localStorage.setItem("token", body.token);
+    setToken(body.token);
   };
 
+  // Attempt to create an account
+  const subRegistration: React.FormEventHandler<HTMLFormElement> = async (e) => {
+    e.preventDefault();
+
+    // Check form
+    if (!e.currentTarget.checkValidity()) {
+      return;
+    }
+
+    // Send info to API
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        "email": email,
+        "password": password
+      })
+    });
+    const body = await response.json();
+
+    // Request failed
+    if (response.status != 200) {
+      alert(body.detail);
+      return;
+    }
+
+    localStorage.setItem("token", body.token);
+    setToken(body.token);
+  };
+
+
+  // Graphics
   if (login) {
+    // Display a login screen
     return (
       <div>
         <form onSubmit={subLogin}>
           <h1>Login</h1>
           <input type="email" value={email} placeholder="Email" required
             onChange={(e) => setEmail(e.target.value)} />
-          <input type="text" value={password} placeholder="Password" required
+          <input type="password" value={password} placeholder="Password" required
             onChange={(e) => setPassword(e.target.value)} />
-          <button class="submit" type="submit">Submit</button>
+          <button className="submit" type="submit">Submit</button>
           <p>Don't have an account?</p>
-          <button class="switch" type="button" onClick={() => setLogin(false)}>
+          <button className="switch" type="button" onClick={() => setLogin(false)}>
             Register</button>
         </form>
       </div>
     );
   } else {
+    // Display a registration screen
     return (
       <div>
         <form onSubmit={subRegistration}>
@@ -53,9 +108,9 @@ const Auth = () => {
             placeholder="Confirm Password" required
             onChange={(e) => setConfirmPassword(e.target.value)}
             ref={confirmRef}/>
-          <button class="submit" type="submit">Submit</button>
+          <button className="submit" type="submit">Submit</button>
           <p>Already have an account?</p>
-          <button class="switch" type="button" onClick={() => setLogin(true)}>
+          <button className="switch" type="button" onClick={() => setLogin(true)}>
             Login</button>
         </form>
       </div>
