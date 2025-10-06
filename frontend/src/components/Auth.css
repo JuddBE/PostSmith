@@ -1,0 +1,49 @@
+body {
+  background-image: linear-gradient(to right, black, #2015A0);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  background: black;
+  border-radius: 20pt;
+  width: 480px;
+  padding: 60px 0;
+}
+
+form > h1 {
+  margin-top: 0;
+}
+
+form > input,button {
+  border-radius: 20pt;
+  padding: 6px;
+  margin: 10px;
+
+  text-align: center;
+  font-size: 14pt;
+  color: black;
+}
+
+form > input {
+  background: white;
+  width: 60%;
+  margin: 10px auto;
+}
+
+.submit {
+  background: #8AE165;
+  width: 55%;
+  margin: 10px auto;
+}
+
+p {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.switch {
+  background: #8A9FFF;
+  width: 30%;
+  margin: 0px auto;
+}
