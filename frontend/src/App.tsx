@@ -4,12 +4,12 @@ import './App.css'
 
 import Auth from './components/Auth'
 import Chat from './components/Chat'
-
+import Dashboard from './pages/Dashboard/Dashboard'
 
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
 
   // On token change, try authenticating
@@ -53,6 +53,7 @@ function App() {
         // Accessible to people with accounts
         <Routes>
           <Route path="/*" element={<Chat user={user} />} />
+          <Route path="/dashboard" element={<Dashboard user={user} />} />
         </Routes>
       ) : (
         // Accessible to people without accounts
@@ -60,6 +61,11 @@ function App() {
           <Route path="/*" element={<Auth setToken={setToken} />} />
         </Routes>
       )}
+      
+      {/* <Routes>
+          <Route path="/*" element={<Chat user={user} />} />
+          <Route path="/dashboard" element={<Dashboard user={user} />} />
+        </Routes> */}
     </Router>
   );
 }
