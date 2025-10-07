@@ -1,0 +1,22 @@
+body {
+  background-image: linear-gradient(to right, black, #2015A0);
+  color: white;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card grid layout */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+  padding: 40px;
+  justify-items: center;
+}

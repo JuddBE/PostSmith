@@ -1,0 +1,27 @@
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background: rgba(0, 0, 0, 0.8);
+  border-bottom: 2px solid #8A9FFF;
+}
+
+.dashboard-header h1 {
+  font-size: 1.8rem;
+  color: #8AE165;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  padding: 2px;
+}
