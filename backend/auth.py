@@ -6,7 +6,7 @@ from pydantic import BaseModel
 import hmac, hashlib, secrets
 import jwt
 
-from models import User, FullUser
+from models import ProtectedUser, PrivateUser
 from db import users, get_user
 
 # Auth parameters
@@ -30,9 +30,9 @@ class RegistrationRequest(BaseModel):
 
 
 # Tokens
-def create_token(user_id: str):
+def create_token(user_id: ObjectId):
     package = {
-        "sub": user_id,
+        "sub": str(user_id),
         "exp": datetime.utcnow() + timedelta(weeks=2)
     }
     token = jwt.encode(package, TOKEN_SECRET, algorithm=TOKEN_ALGORITHM)
@@ -48,11 +48,14 @@ def authenticate(packed: HTTPAuthorizationCredentials = Depends(security)):
         )
 
         # Return user or bad token
-        user = get_user({"_id": ObjectId(payload["sub"])})
+        user = users.find_one(
+            {"_id": ObjectId(payload["sub"])}
+        )
         if user == None:
             raise Exception()
-        return user
-    except Exception:
+        return ProtectedUser(**user)
+    except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Bad token"
@@ -61,8 +64,8 @@ def authenticate(packed: HTTPAuthorizationCredentials = Depends(security)):
 
 # Routes
 @router.post("/token")
-async def token(user: User = Depends(authenticate)):
-    return user.dict()
+async def token(user: ProtectedUser = Depends(authenticate)):
+    return user
 
 @router.post("/login")
 async def login(request: LoginRequest):
@@ -85,7 +88,7 @@ async def login(request: LoginRequest):
         )
 
     # Return token
-    return { "token": create_token(str(user["_id"])) }
+    return { "token": create_token(user["_id"]) }
 
 @router.post("/register")
 async def register(request: RegistrationRequest):
@@ -104,12 +107,12 @@ async def register(request: RegistrationRequest):
     ).hexdigest()
 
     # Create user
-    user = FullUser(
+    user_info = PrivateUser(
         email=request.email,
         password=password,
         seed=seed
     )
-    result = users.insert_one(user.dict())
+    result = users.insert_one(user_info.model_dump(exclude_none=True))
 
     #return token
-    return { "token": create_token(str(result.inserted_id)) }
+    return { "token": create_token(result.inserted_id) }

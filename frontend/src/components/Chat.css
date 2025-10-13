@@ -1,0 +1,102 @@
+html, body, #root {
+  height: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #242366;
+}
+
+#root {
+  width: 100%;
+}
+
+#pane {
+  background: #13131e;
+  width: 80%;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Messages. */
+#messages {
+  flex: 1;
+  justify-content: flex-end;
+  overflow-y: auto;
+}
+
+.agent, .user {
+  max-width: 65%;
+}
+.agent {
+  margin: 8px auto 8px 8px;
+}
+.user {
+  margin: 8px 8px 8px auto;
+}
+.agent>p {
+  text-align: left;
+}
+.user>p {
+  text-align: right;
+  margin-left: auto;
+}
+
+.message--time {
+  user-select: none;
+  font-size: 11pt;
+  color: lightgray;
+  margin: 0 10px;
+}
+.message--content {
+  background-color: #201F42;
+  font-size: 16pt;
+  font-weight: 500;
+  padding: 8px;
+  border-radius: 14px;
+  width: fit-content;
+  margin: 0;
+}
+.agent>.message--content {
+  background-color: #1D1D2E;
+  color: lightgray;
+}
+.user>.message--content {
+  background-color: #025bff;
+  color: black;
+}
+
+/* Inputs. */
+#input {
+  display: flex;
+  flex-direction: row;
+  padding: 10px 10%;
+}
+#input>*{
+  margin: 0 10px;
+  padding: 10px;
+  font-size: 14pt;
+}
+#input--text {
+  flex: 1;
+  border-radius: 14px;
+  background-color: #242366;
+  border: 2px solid #3432c8;
+}
+#input--text:focus {
+  border: 2px solid #d9d9f2;
+}
+#input--submit {
+  border-radius: 20px;
+  background-color: #3432c8;
+  padding: 10px 15px;
+  font-size: 20px;
+}
+#input--submit:disabled {
+  background-color: #1D1D2E;
+}
+

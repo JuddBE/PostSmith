@@ -5,11 +5,13 @@ import './App.css'
 import Auth from './components/Auth'
 import Chat from './components/Chat'
 
+import type { User } from './types'
+
 
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // On token change, try authenticating
@@ -30,6 +32,7 @@ function App() {
       const body = await response.json();
 
       if (response.status == 200) {
+        body["token"] = token;
         setUser(body);
       } else {
         localStorage.removeItem("token");
@@ -52,7 +55,7 @@ function App() {
       {user !== null ? (
         // Accessible to people with accounts
         <Routes>
-          <Route path="/*" element={<Chat user={user} />} />
+          <Route path="/*" element={<Chat user={user!} />} />
         </Routes>
       ) : (
         // Accessible to people without accounts
