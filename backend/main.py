@@ -16,19 +16,19 @@ from auth import router as auth_router
 load_dotenv()
 
 # Full credentials, mix of v1.1 and v2
-# api_key = os.getenv('API_KEY')
-# api_secret = os.getenv('API_SECRET')
-# access_token = os.getenv('ACCESS_TOKEN')
-# access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-# bearer_token = os.getenv('BEARER_TOKEN')
+api_key = os.getenv('API_KEY')
+api_secret = os.getenv('API_SECRET')
+access_token = os.getenv('ACCESS_TOKEN')
+access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
+bearer_token = os.getenv('BEARER_TOKEN')
 
-# # NOTE: Mix of v1.1 and v2 endpoints, they are still updating
-# client = tweepy.Client(bearer_token=bearer_token,
-#                             consumer_key=api_key,
-#                             consumer_secret=api_secret,
-#                             access_token=access_token,
-#                             access_token_secret=access_token_secret,
-#                             wait_on_rate_limit=True)
+# NOTE: Mix of v1.1 and v2 endpoints, they are still updating
+client = tweepy.Client(bearer_token=bearer_token,
+                            consumer_key=api_key,
+                            consumer_secret=api_secret,
+                            access_token=access_token,
+                            access_token_secret=access_token_secret,
+                            wait_on_rate_limit=True)
 
 # Model endpoint config
 endpoint = "https://postsmith-resource.cognitiveservices.azure.com/"
@@ -63,19 +63,19 @@ async def test():
 async def serve(full_path: str):
     return FileResponse(react_build + "/index.html")
 
-# @app.post("/process")
-# def process_user_prompt(prompt: str, media_paths: Optional[List[str]] = File(None)):
-#     """Process/handle user prompt to decide if post, reply, quote, like, or retweet, and which social media platform to use given user prompt or prior context.
-#         Also handle media if provided, or if media generation is prompted.
+@app.post("/process/")
+def process_user_prompt(prompt: str, media_paths: Optional[List[str]] = File(None)):
+    """Process/handle user prompt to decide if post, reply, quote, like, or retweet, and which social media platform to use given user prompt or prior context.
+        Also handle media if provided, or if media generation is prompted.
 
-#     Args:
-#         prompt (str): User input prompt.
-#         media_paths (Optional[str]): Optional media paths for image or video (user supplied).
+    Args:
+        prompt (str): User input prompt.
+        media_paths (Optional[str]): Optional media paths for image or video (user supplied).
         
-#     Returns:
-#         N/A
-#     """
-#     pass
+    Returns:
+        N/A
+    """
+    pass
 
 
 def encode_image_to_data_url(path):
@@ -163,61 +163,61 @@ async def generate_post(prompt: str = Form(...), files: Optional[List[str]] = Fi
         return {"post_content": model_res.choices[0].message.content}
     
 
-# @app.post("/xpost/")
-# def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply_tweet_id: str = None, quote_tweet_id: str = None):
-#     """Post tweet, quote tweet, or reply to tweet with mandatory text, optional media.
+@app.post("/xpost/")
+def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply_tweet_id: str = None, quote_tweet_id: str = None):
+    """Post tweet, quote tweet, or reply to tweet with mandatory text, optional media.
     
-#     Args:
-#         text (str): Tweet content (280 char max). #TODO: from LLM
-#         media_paths: List of paths to media files. # TODO: from image gen
+    Args:
+        text (str): Tweet content (280 char max). #TODO: from LLM
+        media_paths: List of paths to media files. # TODO: from image gen
 
-#     Returns:
-#         Dictionary with tweet details.
-#     """
+    Returns:
+        Dictionary with tweet details.
+    """
 
-#     try: # try to post tweet
-#         # Conflict prevention
-#         if reply_tweet_id and quote_tweet_id:
-#             return {"success": False, "error": "A tweet cannot be both a reply and a quote at the same time."}
+    try: # try to post tweet
+        # Conflict prevention
+        if reply_tweet_id and quote_tweet_id:
+            return {"success": False, "error": "A tweet cannot be both a reply and a quote at the same time."}
 
-#         # NOTE: For text-only tweets, there would just be no media_paths in the call.
-#         if not media_paths:
-#             response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id)
-#             return {"success": True, "tweet_id": response.data['id']}
+        # NOTE: For text-only tweets, there would just be no media_paths in the call.
+        if not media_paths:
+            response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id)
+            return {"success": True, "tweet_id": response.data['id']}
         
-#         # For media tweets, you still need to upload media first and get media_ids
-#         # This requires v1.1 API for media upload, then pass media_ids to v2
-#         # NOTE: Fixed
-#         auth = tweepy.OAuthHandler(api_key, api_secret)
-#         auth.set_access_token(access_token, access_token_secret)
-#         api_v1 = tweepy.API(auth)
+        # For media tweets, you still need to upload media first and get media_ids
+        # This requires v1.1 API for media upload, then pass media_ids to v2
+        # NOTE: Fixed
+        auth = tweepy.OAuthHandler(api_key, api_secret)
+        auth.set_access_token(access_token, access_token_secret)
+        api_v1 = tweepy.API(auth)
         
-#         media_ids = []
-#         for path in media_paths:
-#             media = api_v1.media_upload(path) # upload media first
-#             media_ids.append(media.media_id) # collect media IDs
+        media_ids = []
+        for path in media_paths:
+            media = api_v1.media_upload(path) # upload media first
+            media_ids.append(media.media_id) # collect media IDs
 
-#         response = client.create_tweet(text=content, media_ids=media_ids, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # post tweet with media
-#         return {"success": True, "tweet_id": response.data['id']}
+        response = client.create_tweet(text=content, media_ids=media_ids, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # post tweet with media
+        return {"success": True, "tweet_id": response.data['id']}
         
-#     except Exception as e: # grab if errors
-#         return {"success": False, "error": str(e)}
+    except Exception as e: # grab if errors
+        return {"success": False, "error": str(e)}
     
-# @app.post("/xlike/")
-# def like_tweet(tweet_id: str):
-#     try:
-#         user = client.get_me().data.id
-#         client.like(user_id=user, tweet_id=tweet_id)
-#         return {"status": True, "liked_tweet_id": tweet_id}
-#     except Exception as e:
-#         return {"success": False, "error": str(e)}
+@app.post("/xlike/")
+def like_tweet(tweet_id: str):
+    try:
+        user = client.get_me().data.id
+        client.like(user_id=user, tweet_id=tweet_id)
+        return {"status": True, "liked_tweet_id": tweet_id}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
     
-# @app.post("/xrepost/")
-# def retweet_tweet(tweet_id: str):
-#     try:
-#         user = client.get_me().data.id
-#         client.retweet(user_id=user, tweet_id=tweet_id)
-#         return {"status": True, "liked_tweet_id": tweet_id}
-#     except Exception as e:
-#         return {"success": False, "error": str(e)}
+@app.post("/xrepost/")
+def retweet_tweet(tweet_id: str):
+    try:
+        user = client.get_me().data.id
+        client.retweet(user_id=user, tweet_id=tweet_id)
+        return {"status": True, "liked_tweet_id": tweet_id}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
