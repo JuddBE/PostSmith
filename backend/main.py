@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, File
+from fastapi import FastAPI, HTTPException, status, File, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import tempfile
@@ -53,13 +53,13 @@ react_build = "../frontend/dist/"
 app.mount("/assets", StaticFiles(directory=react_build + "assets"), name="assets")
 
 
-@app.post("/api/test")
+@app.post("/api/test/")
 async def test():
     data = list(users.find())
     print(data)
 
 # Page service
-@app.get("/{full_path:path}")
+@app.get("/{full_path:path}/")
 async def serve(full_path: str):
     return FileResponse(react_build + "/index.html")
 
@@ -87,7 +87,7 @@ def encode_image_to_data_url(path):
     return f"data:image/{mime};base64,{encoded}"
 
 @app.post("/gen_post/")
-async def generate_post(prompt: str, files: Optional[List[str]] = File(None)):
+async def generate_post(prompt: str = Body(...), files: Optional[List[str]] = File(None)):
     """Handle logic for calling model endpoint to generate post content, including image handling (caption or generate), post/reply/quote handling,
         and social media platform handling (make post fit for desired platform)
         
@@ -162,7 +162,7 @@ async def generate_post(prompt: str, files: Optional[List[str]] = File(None)):
         return {"post_content": model_res.choices[0].message.content}
     
 
-# @app.post("/xpost")
+# @app.post("/xpost/")
 # def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply_tweet_id: str = None, quote_tweet_id: str = None):
 #     """Post tweet, quote tweet, or reply to tweet with mandatory text, optional media.
     
@@ -202,7 +202,7 @@ async def generate_post(prompt: str, files: Optional[List[str]] = File(None)):
 #     except Exception as e: # grab if errors
 #         return {"success": False, "error": str(e)}
     
-# @app.post("/xlike")
+# @app.post("/xlike/")
 # def like_tweet(tweet_id: str):
 #     try:
 #         user = client.get_me().data.id
@@ -211,7 +211,7 @@ async def generate_post(prompt: str, files: Optional[List[str]] = File(None)):
 #     except Exception as e:
 #         return {"success": False, "error": str(e)}
     
-# @app.post("/xrepost")
+# @app.post("/xrepost/")
 # def retweet_tweet(tweet_id: str):
 #     try:
 #         user = client.get_me().data.id
