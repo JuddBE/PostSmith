@@ -86,7 +86,7 @@ def encode_image_to_data_url(path):
     mime = "jpeg" if ext in ["jpg", "jpeg"] else ext
     return f"data:image/{mime};base64,{encoded}"
 
-@app.post("/gen_post")
+@app.post("/gen_post/")
 async def generate_post(prompt: str, files: Optional[List[str]] = File(None)):
     """Handle logic for calling model endpoint to generate post content, including image handling (caption or generate), post/reply/quote handling,
         and social media platform handling (make post fit for desired platform)
