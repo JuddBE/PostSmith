@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, File, Body
+from fastapi import FastAPI, HTTPException, status, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import tempfile
@@ -87,7 +87,7 @@ def encode_image_to_data_url(path):
     return f"data:image/{mime};base64,{encoded}"
 
 @app.post("/gen_post/")
-async def generate_post(prompt: str = Body(...), files: Optional[List[str]] = File(None)):
+async def generate_post(prompt: str = Form(...), files: Optional[List[str]] = File(None)):
     """Handle logic for calling model endpoint to generate post content, including image handling (caption or generate), post/reply/quote handling,
         and social media platform handling (make post fit for desired platform)
         
@@ -96,6 +96,7 @@ async def generate_post(prompt: str = Body(...), files: Optional[List[str]] = Fi
         media_paths (Optional[List[str]]): Optional media paths for image or video (user supplied).
     
     """
+
     # Make data URLs for images if any
     image_urls = []
     if files:
