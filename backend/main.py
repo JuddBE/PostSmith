@@ -9,9 +9,9 @@ from dotenv import load_dotenv
 import base64
 import os
 
-from models import User
 from db import users
 from auth import router as auth_router
+from chat import router as chat_router
 
 load_dotenv()
 
@@ -48,15 +48,11 @@ client = AzureOpenAI(
 # Create app
 app = FastAPI()
 app.include_router(auth_router, prefix="/api/auth")
+app.include_router(chat_router, prefix="/api/chat")
 
 react_build = "../frontend/dist/"
 app.mount("/assets", StaticFiles(directory=react_build + "assets"), name="assets")
 
-
-@app.post("/api/test/")
-async def test():
-    data = list(users.find())
-    print(data)
 
 # Page service
 @app.get("/{full_path:path}/")
@@ -71,7 +67,7 @@ def process_user_prompt(prompt: str, media_paths: Optional[List[str]] = File(Non
     Args:
         prompt (str): User input prompt.
         media_paths (Optional[str]): Optional media paths for image or video (user supplied).
-        
+
     Returns:
         N/A
     """
@@ -90,11 +86,11 @@ def encode_image_to_data_url(path):
 async def generate_post(prompt: str = Form(...), files: Optional[List[str]] = File(None)):
     """Handle logic for calling model endpoint to generate post content, including image handling (caption or generate), post/reply/quote handling,
         and social media platform handling (make post fit for desired platform)
-        
+
     Args:
         prompt (str): User input prompt.
         media_paths (Optional[List[str]]): Optional media paths for image or video (user supplied).
-    
+
     """
 
     # Make data URLs for images if any
@@ -161,12 +157,12 @@ async def generate_post(prompt: str = Form(...), files: Optional[List[str]] = Fi
         )
 
         return {"post_content": model_res.choices[0].message.content}
-    
+
 
 @app.post("/xpost/")
 def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply_tweet_id: str = None, quote_tweet_id: str = None):
     """Post tweet, quote tweet, or reply to tweet with mandatory text, optional media.
-    
+
     Args:
         text (str): Tweet content (280 char max). #TODO: from LLM
         media_paths: List of paths to media files. # TODO: from image gen
@@ -184,14 +180,14 @@ def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply
         if not media_paths:
             response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id)
             return {"success": True, "tweet_id": response.data['id']}
-        
+
         # For media tweets, you still need to upload media first and get media_ids
         # This requires v1.1 API for media upload, then pass media_ids to v2
         # NOTE: Fixed
         auth = tweepy.OAuthHandler(api_key, api_secret)
         auth.set_access_token(access_token, access_token_secret)
         api_v1 = tweepy.API(auth)
-        
+
         media_ids = []
         for path in media_paths:
             media = api_v1.media_upload(path) # upload media first
@@ -199,10 +195,10 @@ def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply
 
         response = client.create_tweet(text=content, media_ids=media_ids, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # post tweet with media
         return {"success": True, "tweet_id": response.data['id']}
-        
+
     except Exception as e: # grab if errors
         return {"success": False, "error": str(e)}
-    
+
 @app.post("/xlike/")
 def like_tweet(tweet_id: str):
     try:
@@ -211,7 +207,7 @@ def like_tweet(tweet_id: str):
         return {"status": True, "liked_tweet_id": tweet_id}
     except Exception as e:
         return {"success": False, "error": str(e)}
-    
+
 @app.post("/xrepost/")
 def retweet_tweet(tweet_id: str):
     try:

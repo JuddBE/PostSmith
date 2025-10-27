@@ -2,6 +2,11 @@ body {
   background-image: linear-gradient(to right, black, #2015A0);
 }
 
+#root {
+  align-content:center;
+  margin: auto 0;
+}
+
 form {
   display: flex;
   flex-direction: column;
@@ -9,6 +14,7 @@ form {
   border-radius: 20pt;
   width: 480px;
   padding: 60px 0;
+  margin: auto;
 }
 
 form > h1 {
