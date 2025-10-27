@@ -1,7 +1,7 @@
 from bson import ObjectId
 from datetime import datetime
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
 
 # Create a field that can take a string or ObjectId, stores as ObjectId
@@ -60,8 +60,13 @@ class PrivateUser(ProtectedUser):
 
 
 # Messages between a user and the service
+class MessageContent(BaseModel):
+    type: str
+    text: Optional[str] = None
+    url: Optional[str] = None
+
 class Message(MongoBaseModel):
     user_id: IdField
     from_user: bool
-    contents: str
+    contents: List[MessageContent]
     timestamp: datetime = Field(default_factory=datetime.utcnow)

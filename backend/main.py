@@ -1,15 +1,9 @@
 from fastapi import FastAPI, HTTPException, status, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from openai import AzureOpenAI
-from dotenv import load_dotenv
 
 from auth import router as auth_router
 from chat import router as chat_router
-
-
-# Load env
-load_dotenv()
 
 
 # Create app

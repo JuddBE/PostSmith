@@ -14,12 +14,12 @@ chats = db["chats"]
 
 # Default filter sensitive data
 def get_user(query):
-    data = users.find_one(query, USER_FILTER)
+    data = users.find_one(query)
     if data is None:
         return None
     return PublicUser(**data)
 
 def get_users(query):
-    data = users.find(query, USER_FILTER)
+    data = users.find(query)
     wrapped = [ PublicUser(**entry) for entry in list(data) ]
     return wrapped

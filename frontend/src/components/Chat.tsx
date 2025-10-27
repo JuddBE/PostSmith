@@ -8,11 +8,16 @@ import './Chat.css'
 type ChatProps = {
   user: {[key: string]: string};
 };
+type MessageContent = {
+  type: string,
+  text?: string,
+  url?: string
+}
 type Message = {
   _id: string,
   user_id: string,
   from_user: boolean,
-  contents: string,
+  contents: [MessageContent],
   timestamp: string
 }
 
@@ -129,9 +134,9 @@ const Chat = ({ user }: ChatProps) => {
         "Authorization": `Bearer ${user["token"]}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        "message": input
-      })
+      body: JSON.stringify([
+        {"type": "text", "text": input}
+      ])
     });
     if (response.status != 200) {
       alert("Bad connection");
@@ -183,16 +188,16 @@ const Chat = ({ user }: ChatProps) => {
             <div key={message["_id"]} className="user">
               <p className="message--time">
                 {getDisplay(message["timestamp"])}</p>
-              <p className="message--content">{message["contents"]}</p>
+              <p className="message--content">{message["contents"][0].text}</p>
             </div>
           ) : (
             <div key={message["_id"]} className="agent">
               <p className="message--time">
                 Agent, {getDisplay(message["timestamp"])}</p>
-              <p className="message--content">{message["contents"]}</p>
+              <p className="message--content">{message["contents"][0].text}</p>
             </div>
           )
-                   )}
+      )}
       </div>
       <div id="input">
         <TextareaAutosize id="input--text" placeholder="Begin drafting..."

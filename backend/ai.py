@@ -1,8 +1,15 @@
-from typing import Optional, List
-import base64
 import os
+import pydantic
 import tempfile
+from openai import AzureOpenAI
+from typing import Optional, List
+from dotenv import load_dotenv
 
+from models import MessageContent
+
+
+# Load env
+load_dotenv()
 
 # Model endpoint config
 ENDPOINT = "https://postsmith-resource.cognitiveservices.azure.com/"
@@ -30,50 +37,21 @@ client = AzureOpenAI(
 
 
 # Main functionality
-async def chat(prompt: str = Form(...), files: Optional[List[str]] = File(None)):
+async def ai_chat(content: List[MessageContent]):
     """Handle logic for calling model endpoint to generate post content,
         including image handling (caption or generate), post/reply/quote handling,
         and social media platform handling (make post fit for desired platform)
 
     Args:
-        prompt (str): User input prompt.
-        media_paths (Optional[List[str]]):
-            Optional media paths for image or video (user supplied).
+        content (List[MessageContent]: User input prompt.
     """
-
-    message_content = [{"type": "text", "text": prompt}]
-
-    # Convert any images to data URIs
-    ## MOVE TO FRONTEND
-    image_urls = []
-    if files:
-        for file in files:
-            suffix = "." + file.filename.split(".")[-1]
-            temp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-            temp.write(await file.read())
-            temp.close()
-            image_urls.append(encode_image_to_data_url(temp.name))
-
-    # Add URIs to prompt
-    for url in image_urls:
-        message_content.append({
-            "type": "image_url",
-            "image_url": {
-                "url": url
-            }
-        })
-
-    # Define messages
-    messages=[
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT,
-        },
-        {
-            "role": "user",
-            "content": message_content
-        }
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": [
+            e.model_dump(exclude_none=True) for e in content
+        ]}
     ]
+    print(messages)
 
     # Call model
     model_res = client.chat.completions.create(
@@ -85,14 +63,4 @@ async def chat(prompt: str = Form(...), files: Optional[List[str]] = File(None))
     )
 
     # Return the result
-    return {"post_content": model_res.choices[0].message['content']}
-
-
-# Utility functions
-def encode_image_to_data_url(path):
-    with open(path, "rb") as f:
-        img_bytes = f.read()
-    encoded = base64.b64encode(img_bytes).decode("utf-8")
-    ext = path.split(".")[-1].lower()
-    mime = "jpeg" if ext in ["jpg", "jpeg"] else ext
-    return f"data:image/{mime};base64,{encoded}"
+    return model_res.choices[0].message.content

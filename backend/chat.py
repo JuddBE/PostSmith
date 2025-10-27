@@ -2,9 +2,11 @@ from bson import ObjectId
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from typing import List
 
 from auth import authenticate
-from models import ProtectedUser, Message, PublicUser
+from models import ProtectedUser, PublicUser, Message, MessageContent
+from ai import ai_chat
 from db import chats
 
 
@@ -12,32 +14,28 @@ from db import chats
 router = APIRouter()
 
 
-# Data structures
-class SendRequest(BaseModel):
-    message: str
-
-
 # Routes
 @router.post("/send")
-async def send(request: SendRequest,
+async def send(contents: List[MessageContent],
                user: ProtectedUser = Depends(authenticate)):
-
     # The message the user sends
     messages = []
     incoming = Message(
         user_id=user.id,
         from_user=True,
-        contents=request.message
+        contents=contents
     )
     result = chats.insert_one(incoming.model_dump(exclude_none=True))
     incoming.id = result.inserted_id
 
 
     # The response
+    response = await ai_chat(contents)
+
     outgoing = Message(
         user_id=user.id,
         from_user=False,
-        contents="Hello there"
+        contents=[{"type": "text", "text": response}]
     )
     result = chats.insert_one(outgoing.model_dump(exclude_none=True))
     outgoing.id = result.inserted_id

@@ -1,6 +1,11 @@
 import tweepy
 import os
 
+from dotenv import load_dotenv
+
+# Load env
+load_dotenv()
+
 # Full credentials, mix of v1.1 and v2
 api_key = os.getenv('API_KEY')
 api_secret = os.getenv('API_SECRET')
