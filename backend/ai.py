@@ -5,7 +5,8 @@ from openai import AzureOpenAI
 from typing import Optional, List
 from dotenv import load_dotenv
 
-from models import MessageContent
+from models import MessageContent, PublicUser
+from db import chats
 
 
 # Load env
@@ -37,7 +38,7 @@ client = AzureOpenAI(
 
 
 # Main functionality
-async def ai_chat(content: List[MessageContent]):
+async def ai_chat(user: PublicUser, content: List[MessageContent]):
     """Handle logic for calling model endpoint to generate post content,
         including image handling (caption or generate), post/reply/quote handling,
         and social media platform handling (make post fit for desired platform)
@@ -45,13 +46,17 @@ async def ai_chat(content: List[MessageContent]):
     Args:
         content (List[MessageContent]: User input prompt.
     """
+    # Get a list of system, then history of conversation, then the new user message
+    history = chats.find(
+            {"user_id": user.id}, {"_id": 0, "role": 1, "content": 1}
+    ).sort("_id")
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
+        *history,
         {"role": "user", "content": [
             e.model_dump(exclude_none=True) for e in content
         ]}
     ]
-    print(messages)
 
     # Call model
     model_res = client.chat.completions.create(

@@ -67,6 +67,6 @@ class MessageContent(BaseModel):
 
 class Message(MongoBaseModel):
     user_id: IdField
-    from_user: bool
-    contents: List[MessageContent]
+    role: str
+    content: List[MessageContent]
     timestamp: datetime = Field(default_factory=datetime.utcnow)

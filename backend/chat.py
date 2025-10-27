@@ -16,26 +16,26 @@ router = APIRouter()
 
 # Routes
 @router.post("/send")
-async def send(contents: List[MessageContent],
+async def send(content: List[MessageContent],
                user: ProtectedUser = Depends(authenticate)):
     # The message the user sends
     messages = []
     incoming = Message(
         user_id=user.id,
-        from_user=True,
-        contents=contents
+        role="user",
+        content=content
     )
     result = chats.insert_one(incoming.model_dump(exclude_none=True))
     incoming.id = result.inserted_id
 
 
     # The response
-    response = await ai_chat(contents)
+    response = await ai_chat(user, content)
 
     outgoing = Message(
         user_id=user.id,
-        from_user=False,
-        contents=[{"type": "text", "text": response}]
+        role="assistant",
+        content=[{"type": "text", "text": response}]
     )
     result = chats.insert_one(outgoing.model_dump(exclude_none=True))
     outgoing.id = result.inserted_id

@@ -16,8 +16,8 @@ type MessageContent = {
 type Message = {
   _id: string,
   user_id: string,
-  from_user: boolean,
-  contents: [MessageContent],
+  role: string,
+  content: [MessageContent],
   timestamp: string
 }
 
@@ -183,21 +183,23 @@ const Chat = ({ user }: ChatProps) => {
   return (
     <div id="pane">
       <div id="messages" ref={messageAreaRef}>
-      {messages.map((message, _index) =>
-          message["from_user"] ? (
+      {messages.length !== 0 ?
+        messages.map((message, _index) =>
+          message["role"] === "user" ? (
             <div key={message["_id"]} className="user">
               <p className="message--time">
                 {getDisplay(message["timestamp"])}</p>
-              <p className="message--content">{message["contents"][0].text}</p>
+              <p className="message--content">{message["content"][0].text}</p>
             </div>
           ) : (
             <div key={message["_id"]} className="agent">
               <p className="message--time">
                 Agent, {getDisplay(message["timestamp"])}</p>
-              <p className="message--content">{message["contents"][0].text}</p>
+              <p className="message--content">{message["content"][0].text}</p>
             </div>
           )
-      )}
+        ) : <p id="messages--empty">No messages, start your post!</p>
+      }
       </div>
       <div id="input">
         <TextareaAutosize id="input--text" placeholder="Begin drafting..."
