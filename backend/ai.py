@@ -98,7 +98,6 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
                 text = args.get("post_text")
                 if text:
                     xapi = XAPI()
-                    return "created api access"
                     result = xapi.post_tweet(text)
                     if result["success"]:
                         return f"Posted to X! https://x.com/postsmither/status/{result['tweet_id']}"
