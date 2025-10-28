@@ -60,10 +60,12 @@ class PrivateUser(ProtectedUser):
 
 
 # Messages between a user and the service
+class ImageUrl(BaseModel):
+    url: str
 class MessageContent(BaseModel):
     type: str
     text: Optional[str] = None
-    url: Optional[str] = None
+    image_url: Optional[ImageUrl] = None
 
 class Message(MongoBaseModel):
     user_id: IdField

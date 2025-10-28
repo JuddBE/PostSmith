@@ -25,17 +25,17 @@ async def send(content: List[MessageContent],
         role="user",
         content=content
     )
-    result = chats.insert_one(incoming.model_dump(exclude_none=True))
-    incoming.id = result.inserted_id
-
 
     # The response
     response = await ai_chat(user, content)
 
+    result = chats.insert_one(incoming.model_dump(exclude_none=True))
+    incoming.id = result.inserted_id
+
     outgoing = Message(
         user_id=user.id,
         role="assistant",
-        content=[{"type": "text", "text": response}]
+        content=[{"type": "output_text", "text": response}]
     )
     result = chats.insert_one(outgoing.model_dump(exclude_none=True))
     outgoing.id = result.inserted_id

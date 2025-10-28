@@ -1,37 +1,53 @@
 import { useEffect, useState, useRef } from 'react';
 
 import TextareaAutosize from "react-textarea-autosize";
-import { FaArrowUp as SendIcon } from "react-icons/fa";
+import {
+  FaArrowUp as SendIcon, FaImage as AddIcon
+} from "react-icons/fa";
 
 import './Chat.css'
 
 type ChatProps = {
   user: {[key: string]: string};
 };
+type ImageURL = {
+  url: string;
+}
 type MessageContent = {
   type: string,
   text?: string,
-  url?: string
-}
+  image_url?: ImageURL
+};
 type Message = {
   _id: string,
   user_id: string,
   role: string,
   content: [MessageContent],
   timestamp: string
-}
+};
+
+type Image = {
+  loading: boolean;
+  id: string;
+  file: File;
+  url?: string;
+};
 
 
 const Chat = ({ user }: ChatProps) => {
   // States variables
   const [messages, setMessages] = useState<Message[]>([]);
-  let lastMessage = useRef<string | null>(null);
-  let waitingOnReply = useRef(false);
-  let waitingOnMessages = useRef(false);
-  let scrollLocked = useRef(true);
-  let fullyLoaded = useRef(false);
+  const [images, setImages] = useState<Image[]>([]);
+  const [loadingImages, setLoadingImages] = useState<number>(0);
+  const lastMessage = useRef<string | null>(null);
+  const waitingOnReply = useRef(false);
+  const waitingOnMessages = useRef(false);
+  const scrollLocked = useRef(true);
+  const fullyLoaded = useRef(false);
+
 
   const messageAreaRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [input, setInput] = useState("");
   const [inputReady, setInputReady] = useState(true);
@@ -84,7 +100,6 @@ const Chat = ({ user }: ChatProps) => {
     // If near bottom, follow it
     const bottom = area.scrollHeight - area.clientHeight;
     scrollLocked.current = bottom - area.scrollTop < .3 * area.clientHeight;
-
   };
 
   // Bind on scroll
@@ -116,16 +131,36 @@ const Chat = ({ user }: ChatProps) => {
     return input.trim() !== "";
   };
   useEffect(() => {
-    if (waitingOnReply.current)
+    if (waitingOnReply.current || loadingImages !== 0)
       return;
     setInputReady(validateInput());
-  }, [input]);
+  }, [input, loadingImages]);
 
 
   // Submit message to the API
   const sendMessage = async () => {
+    let ready = true;
+    images.forEach(image => {
+      if (image.loading || !image.url) {
+        ready = false;
+      }
+    });
+    if (!ready) {
+      alert("Input images still loading...");
+      return;
+    }
+
     waitingOnReply.current = true;
     setInputReady(false);
+
+    const message: MessageContent[] = [
+      {"type": "input_text", "text": input}
+    ]
+
+    images.forEach(image => message.push({
+      "type": "image_url", "image_url": { "url": image.url! }
+    }));
+
 
     // Post data
     const response = await fetch("/api/chat/send", {
@@ -134,9 +169,7 @@ const Chat = ({ user }: ChatProps) => {
         "Authorization": `Bearer ${user["token"]}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify([
-        {"type": "text", "text": input}
-      ])
+      body: JSON.stringify(message)
     });
     if (response.status != 200) {
       alert("Bad connection");
@@ -146,6 +179,7 @@ const Chat = ({ user }: ChatProps) => {
     }
 
     setInput("");
+    setImages([]);
 
     // Add the result to the message pannel
     const body = await response.json();
@@ -179,6 +213,34 @@ const Chat = ({ user }: ChatProps) => {
     }
   };
 
+  const addImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    const images: Image[] = files.map(file => ({
+      loading: true,
+      id: crypto.randomUUID(),
+      file
+    }));
+    setImages(prev => [...prev, ...images]);
+    setLoadingImages(prev => prev + images.length);
+    images.forEach(image => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImages(prev => prev.map(
+          itr => itr.id === image.id ? {
+            ...itr,
+            url: reader.result as string,
+            loading: false
+          } : itr
+        ));
+        setLoadingImages(prev => prev - 1);
+      };
+      reader.readAsDataURL(image.file);
+    });
+  };
+  const callAddImage = (_e: React.MouseEvent<HTMLButtonElement>) => {
+    fileRef.current?.click();
+  };
+
   // Visual
   return (
     <div id="pane">
@@ -201,7 +263,20 @@ const Chat = ({ user }: ChatProps) => {
         ) : <p id="messages--empty">No messages, start your post!</p>
       }
       </div>
+      <div className="images">
+      {images.map((image, index) =>
+        !image.loading ? (
+          <img key={index} src={image.url} className="image" />
+        ) : (
+          <div key={index} className="image--loading" />
+        )
+      )}
+      </div>
       <div id="input">
+        <input type="file" id="input--file" accept="image/*"
+          ref={fileRef} onChange={addImage} />
+        <button id="input--file" onClick={callAddImage}>
+          <AddIcon /></button>
         <TextareaAutosize id="input--text" placeholder="Begin drafting..."
           value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKey} maxRows={5}/>

@@ -16,7 +16,7 @@ load_dotenv()
 ENDPOINT = "https://postsmith-resource.cognitiveservices.azure.com/"
 DEPLOYMENT = "gpt-4o-mini-2024-07-18"
 SUBSCRIPTION_KEY = os.getenv('AZURE_OPENAI_API_KEY')
-API_VERSION = "2024-12-01-preview"
+API_VERSION = "2025-03-01-preview"
 
 SYSTEM_PROMPT = (
     "You are a chill social media user.Take the user's ideas for posts, "
@@ -59,13 +59,41 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
     ]
 
     # Call model
-    model_res = client.chat.completions.create(
-        messages=messages,
-        max_tokens=4096,
-        temperature=1.3,
-        top_p=1.0,
-        model=DEPLOYMENT
+    #model_res = client.chat.completions.create(
+        #messages=messages,
+        #max_tokens=4096,
+        #temperature=1.3,
+        #top_p=1.0,
+        #model=DEPLOYMENT
+    #)
+
+    response = client.responses.create(
+        model=DEPLOYMENT,
+        input=messages,
+        tools=[
+            {
+                "type": "function",
+                "name": "publish_tweet",
+                "description": "Make a post to twitter. Needs user confirmation",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "post_text": {"type": "string"}
+                    },
+                    "required": ["post_text"]
+                }
+            }
+        ]
     )
 
+    print("-----")
+    print(response.output[0])
+    output = response.output[0]
+    print("-----")
+    print(output)
+
     # Return the result
-    return model_res.choices[0].message.content
+    if output.type == "function_call":
+        if output.name == "publish_tweet":
+            return "@publish tweet " + str(output.arguments)
+    return output.content[0].text
