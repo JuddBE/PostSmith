@@ -5,6 +5,7 @@ from openai import AzureOpenAI
 from typing import Optional, List
 from dotenv import load_dotenv
 
+from x import post_on_x
 from models import MessageContent, PublicUser
 from db import chats
 
@@ -95,5 +96,5 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
     # Return the result
     if output.type == "function_call":
         if output.name == "publish_tweet":
-            return "@publish tweet " + str(output.arguments)
+            post_on_x(output.arguments.post_text)
     return output.content[0].text

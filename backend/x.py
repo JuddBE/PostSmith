@@ -1,6 +1,6 @@
 import tweepy
 import os
-
+from typing import Optional, List, File
 from dotenv import load_dotenv
 
 # Load env
