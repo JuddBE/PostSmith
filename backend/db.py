@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 
-from models import User
+from models import PublicUser
 
 # Connect to mongodb cluster
 MONGO_URI = "mongodb+srv://Judd:qqzSuMisdxZYJqzs@cluster0.s4nnpra.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
@@ -9,17 +9,17 @@ MONGO_URI = "mongodb+srv://Judd:qqzSuMisdxZYJqzs@cluster0.s4nnpra.mongodb.net/?r
 client = MongoClient(MONGO_URI)
 db = client["main"]
 users = db["users"]
+chats = db["chats"]
 
 
 # Default filter sensitive data
-USER_FILTER = { "password": 0, "seed": 0 }
 def get_user(query):
-    data = users.find_one(query, USER_FILTER)
-    if data == None:
+    data = users.find_one(query)
+    if data is None:
         return None
-    return User(**data)
+    return PublicUser(**data)
 
 def get_users(query):
-    data = users.find(query, USER_FILTER)
-    wrapped = [ User(**entry) for entry in list(data) ]
+    data = users.find(query)
+    wrapped = [ PublicUser(**entry) for entry in list(data) ]
     return wrapped
