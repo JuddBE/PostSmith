@@ -4,24 +4,24 @@ from typing import Optional, List
 from fastapi import File
 from dotenv import load_dotenv
 
-# # Load env
-# load_dotenv()
+# Load env
+load_dotenv()
 
-# # Full credentials, mix of v1.1 and v2
-# api_key = os.getenv('API_KEY')
-# api_secret = os.getenv('API_SECRET')
-# access_token = os.getenv('ACCESS_TOKEN')
-# access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-# bearer_token = os.getenv('BEARER_TOKEN')
+# Full credentials, mix of v1.1 and v2
+api_key = os.getenv('API_KEY')
+api_secret = os.getenv('API_SECRET')
+access_token = os.getenv('ACCESS_TOKEN')
+access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
+bearer_token = os.getenv('BEARER_TOKEN')
 
 
-# # NOTE: Mix of v1.1 and v2 endpoints, they are still updating
-# client = tweepy.Client(bearer_token=bearer_token,
-#                             consumer_key=api_key,
-#                             consumer_secret=api_secret,
-#                             access_token=access_token,
-#                             access_token_secret=access_token_secret,
-#                             wait_on_rate_limit=False)
+# NOTE: Mix of v1.1 and v2 endpoints, they are still updating
+client = tweepy.Client(bearer_token=bearer_token,
+                            consumer_key=api_key,
+                            consumer_secret=api_secret,
+                            access_token=access_token,
+                            access_token_secret=access_token_secret,
+                            wait_on_rate_limit=False)
 
 # On rate limit, update database with until reset time
 # Then select a new API st. reset time < current time
@@ -42,27 +42,6 @@ def post_on_x(content: str, media_paths: Optional[List[str]] = None, reply_tweet
     Returns:
         Dictionary with tweet details.
     """
-
-    # Load env
-    load_dotenv()
-
-    # Full credentials, mix of v1.1 and v2
-    api_key = os.getenv('API_KEY')
-    api_secret = os.getenv('API_SECRET')
-    access_token = os.getenv('ACCESS_TOKEN')
-    access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-    bearer_token = os.getenv('BEARER_TOKEN')
-
-
-    # NOTE: Mix of v1.1 and v2 endpoints, they are still updating
-    client = tweepy.Client(bearer_token=bearer_token,
-                                consumer_key=api_key,
-                                consumer_secret=api_secret,
-                                access_token=access_token,
-                                access_token_secret=access_token_secret,
-                                wait_on_rate_limit=False)
-
-
     print("Posting on X with content: ", content)
     print(media_paths)
     try: # try to post tweet
@@ -96,18 +75,18 @@ def post_on_x(content: str, media_paths: Optional[List[str]] = None, reply_tweet
     except Exception as e: # grab if errors
         return {"success": False, "error": str(e)}
 
-# def like_tweet(tweet_id: str):
-#     try:
-#         user = client.get_me().data.id
-#         client.like(user_id=user, tweet_id=tweet_id)
-#         return {"status": True, "liked_tweet_id": tweet_id}
-#     except Exception as e:
-#         return {"success": False, "error": str(e)}
+def like_tweet(tweet_id: str):
+    try:
+        user = client.get_me().data.id
+        client.like(user_id=user, tweet_id=tweet_id)
+        return {"status": True, "liked_tweet_id": tweet_id}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
-# def retweet_tweet(tweet_id: str):
-#     try:
-#         user = client.get_me().data.id
-#         client.retweet(user_id=user, tweet_id=tweet_id)
-#         return {"status": True, "liked_tweet_id": tweet_id}
-#     except Exception as e:
-#         return {"success": False, "error": str(e)}
+def retweet_tweet(tweet_id: str):
+    try:
+        user = client.get_me().data.id
+        client.retweet(user_id=user, tweet_id=tweet_id)
+        return {"status": True, "liked_tweet_id": tweet_id}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
