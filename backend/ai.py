@@ -99,8 +99,18 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
 
     # Return the result
     if output.type == "function_call" and output.name == "publish_tweet":
-        args = json.loads(output.arguments)
-        print(str(args))
-        post_on_x(args["post_text"])
-        return "Posted to X (Twitter)!\n\n" + args["post_text"]
+        # args = json.loads(output.arguments)
+        # print(str(args))
+        # post_on_x(args["post_text"])
+        # return "Posted to X (Twitter)!\n\n" + args["post_text"]
+
+        try:
+            args = json.loads(output.arguments)
+            text = args.get("post_text")
+            if text:
+                post_on_x(text)
+            else:
+                print("Missing post_text in function arguments.")
+        except json.JSONDecodeError as e:
+            print("Error decoding function arguments:", e)
     return output.content[0].text
