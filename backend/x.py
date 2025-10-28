@@ -32,7 +32,7 @@ client = tweepy.Client(bearer_token=bearer_token,
 
 
 # Functions should just take a ProtectedUser
-def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply_tweet_id: str = None, quote_tweet_id: str = None):
+def post_on_x(content: str, media_paths: Optional[List[str]] = None, reply_tweet_id: str = None, quote_tweet_id: str = None):
     """Post tweet, quote tweet, or reply to tweet with mandatory text, optional media.
 
     Args:
