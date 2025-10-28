@@ -94,6 +94,8 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
     print("-----")
     args = json.loads(output.arguments)
     print(args)
+    print(output.type == "function_call")
+    print(output.name == "publish_tweet")
 
     # Return the result
     if output.type == "function_call" and output.name == "publish_tweet":
