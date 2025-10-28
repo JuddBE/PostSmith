@@ -6,7 +6,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 import json
 
-from x import post_on_x
+from x import XAPI
 from models import MessageContent, PublicUser
 from db import chats
 
@@ -88,29 +88,23 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
         ]
     )
 
-    print("-----")
-    print(response.output[0])
     output = response.output[0]
-    print("-----")
-    # args = json.loads(output.arguments)
-    # print(args)
-    # print(output.type == "function_call")
-    # print(output.name == "publish_tweet")
 
     # Return the result
     if output.type == "function_call" and output.name == "publish_tweet":
-        # args = json.loads(output.arguments)
-        # print(str(args))
-        # post_on_x(args["post_text"])
-        # return "Posted to X (Twitter)!\n\n" + args["post_text"]
-
         try:
             args = json.loads(output.arguments)
             text = args.get("post_text")
             if text:
-                post_on_x(text)
+                xapi = XAPI()
+                result = xapi.post_tweet(text)
+                if result["success"]:
+                    return f"Posted to X! https://x.com/postsmither/status/{result['tweet_id']}"
+                else:
+                    return "Failed to post to X. {result['error']"
             else:
-                print("Missing post_text in function arguments.")
+                return "Missing post text."
         except json.JSONDecodeError as e:
             print("Error decoding function arguments:", e)
+            return "Missing post text."
     return output.content[0].text
