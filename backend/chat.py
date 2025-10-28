@@ -57,4 +57,4 @@ async def get(start: str = None, limit: int = 50,
     ]
     messages.reverse()
 
-    return messages;
+    return messages
