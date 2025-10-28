@@ -1,6 +1,7 @@
 import tweepy
 import os
-from typing import Optional, List, File
+from typing import Optional, List
+from fastapi import File
 from dotenv import load_dotenv
 
 # Load env
