@@ -4,6 +4,7 @@ import tempfile
 from openai import AzureOpenAI
 from typing import Optional, List
 from dotenv import load_dotenv
+import json
 
 from x import post_on_x
 from models import MessageContent, PublicUser
@@ -96,5 +97,6 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
     # Return the result
     if output.type == "function_call":
         if output.name == "publish_tweet":
-            post_on_x(output.arguments["post_text"])
+            args = json.loads(output.arguments)
+            post_on_x(args["post_text"])
     return output.content[0].text
