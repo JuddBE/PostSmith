@@ -42,12 +42,14 @@ def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply
     Returns:
         Dictionary with tweet details.
     """
-
+    print("Posting on X with content: ", content)
+    print(media_paths)
     try: # try to post tweet
         # Conflict prevention
+        print("1")
         if reply_tweet_id and quote_tweet_id:
             return {"success": False, "error": "A tweet cannot be both a reply and a quote at the same time."}
-
+        print("2")
         # NOTE: For text-only tweets, there would just be no media_paths in the call.
         if not media_paths:
             response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id)
