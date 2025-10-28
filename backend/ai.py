@@ -102,7 +102,7 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
                     if result["success"]:
                         return f"Posted to X! https://x.com/postsmither/status/{result['tweet_id']}"
                     else:
-                        return "Failed to post to X. {result['error']"
+                        return f"Failed to post to X. {result['error']}"
                 else:
                     return "Missing post text."
             except json.JSONDecodeError as e:
