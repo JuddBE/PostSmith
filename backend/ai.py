@@ -97,6 +97,7 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
     # Return the result
     if output.type == "function_call" and output.name == "publish_tweet":
         args = json.loads(output.arguments)
+        print(str(args))
         post_on_x(args["post_text"])
         return "Posted to X (Twitter)!\n\n" + args["post_text"]
     return output.content[0].text
