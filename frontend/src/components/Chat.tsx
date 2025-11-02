@@ -1,12 +1,22 @@
 import { useEffect, useState, useRef } from 'react';
 
-import TextareaAutosize from "react-textarea-autosize";
 import {
-  FaArrowUp as SendIcon, FaImage as AddIcon
-} from "react-icons/fa";
+  IconButton,
+  InputAdornment,
+  TextField
+} from "@mui/material";
+import SettingsIcon from "@mui/icons-material/Settings";
+import ImageIcon from "@mui/icons-material/Image";
+import SendIcon from "@mui/icons-material/Send";
 
-import './Chat.css'
+import Settings from "./Settings";
 
+import "./Chat.css";
+
+
+/*
+ * Definitions
+ * */
 type ChatProps = {
   user: {[key: string]: string};
 };
@@ -31,11 +41,15 @@ type Image = {
 };
 
 
+/*
+ * Behavior
+ * */
 const Chat = ({ user }: ChatProps) => {
   // States variables
   const [messages, setMessages] = useState<Message[]>([]);
   const [images, setImages] = useState<Image[]>([]);
   const [loadingImages, setLoadingImages] = useState<number>(0);
+  const [open, setOpen] = useState<boolean>(false);
   const lastMessage = useRef<string | null>(null);
   const waitingOnReply = useRef(false);
   const waitingOnMessages = useRef(false);
@@ -201,7 +215,7 @@ const Chat = ({ user }: ChatProps) => {
   }
 
   // On enter, submit text
-  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.shiftKey || e.key !== "Enter")
       return;
     e.preventDefault()
@@ -238,62 +252,127 @@ const Chat = ({ user }: ChatProps) => {
     fileRef.current?.click();
   };
 
+  const openSettings = () => {
+    setOpen(true);
+  };
+
   // Visual
   return (
+  <>
+    {/* Settings menu components */}
+    <IconButton
+      sx={{
+        position: "fixed", top: 12, right: 12,
+        padding: "12px",
+        backgroundColor: "rgba(255,255,255,0.1)",
+        color: "lightgray"
+      }}
+      onClick={openSettings}
+      ><SettingsIcon />
+    </IconButton>
+    <Settings open={open} setOpen={setOpen} user={user} />
+
+    {/* Center pane */}
     <div id="pane">
+      {/*
+        * Message display
+        * */}
       <div id="messages" ref={messageAreaRef}>
       {messages.length !== 0 ?
-        messages.map((message, _index) =>
-          message["role"] === "user" ? (
-            <div key={message["_id"]} className="user">
-              <p className="message--time">
-                {getDisplay(message["timestamp"])}</p>
-              <p className="message--content">
-              <div className="images">
-                {message["content"].slice(1).map((image, index) =>
-                    <img key={index} src={image.image_url} className="image" />
-                )}
-              </div>
-              {message["content"][0].text}
-              </p>
-            </div>
-          ) : (
-            <div key={message["_id"]} className="agent">
-              <p className="message--time">
-                Agent, {getDisplay(message["timestamp"])}</p>
-              <div className="images">
-                {message["content"].slice(1).map((image, index) =>
-                    <img key={index} src={image.image_url} className="image" />
-                )}
-              </div>
-              <p className="message--content">{message["content"][0].text}</p>
-            </div>
-          )
-        ) : <p id="messages--empty">No messages, start your post!</p>
+      messages.map((message, _index) =>
+        /*
+         * User message field
+         * */
+        message["role"] === "user" ? (
+        <div key={message["_id"]} className="user">
+          <p className="message--time">
+          {getDisplay(message["timestamp"])}</p>
+          <p className="message--content">
+          <div className="images">
+          {message["content"].slice(1).map((image, index) =>
+            <img key={index} src={image.image_url} className="image" />
+          )}
+          </div>
+          {message["content"][0].text}
+          </p>
+        </div>
+        ) :
+        /*
+         * Agent message field
+         * */
+        (
+        <div key={message["_id"]} className="agent">
+          <p className="message--time">
+          Agent, {getDisplay(message["timestamp"])}</p>
+          <div className="images">
+          {message["content"].slice(1).map((image, index) =>
+            <img key={index} src={image.image_url} className="image" />
+          )}
+          </div>
+          <p className="message--content">{message["content"][0].text}</p>
+        </div>
+        )
+      ) : <p id="messages--empty">No messages, start your post!</p>
       }
       </div>
+
+      {/*
+        * User image input displays
+        */}
       <div className="images">
       {images.map((image, index) =>
-        !image.loading ? (
-          <img key={index} src={image.url} className="image" />
-        ) : (
-          <div key={index} className="image--loading" />
-        )
+      !image.loading ? (
+        <img key={index} src={image.url} className="image" />
+      ) : (
+        <div key={index} className="image--loading" />
+      )
       )}
       </div>
-      <div id="input">
-        <input type="file" id="input--file" accept="image/*"
-          ref={fileRef} onChange={addImage} />
-        <button id="input--add" onClick={callAddImage}>
-          <AddIcon /></button>
-        <TextareaAutosize id="input--text" placeholder="Begin drafting..."
-          value={input} onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKey} maxRows={5}/>
-        <button id="input--submit" onClick={sendMessage}
-          disabled={!inputReady}><SendIcon /></button>
-      </div>
+
+
+      {/*
+        * User input fields and buttons
+        */}
+      <input type="file" id="input--file" accept="image/*"
+        ref={fileRef} onChange={addImage} />
+      <TextField
+        value={input} onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKey}
+        multiline
+        maxRows={5}
+        placeholder="Begin drafting..."
+        sx={{
+          margin: "0 10% 10px 10%",
+          "& .MuiOutlinedInput-root": {
+            borderRadius: "12px",
+            backgroundColor: "#474862",
+          },
+          "& .MuiOutlinedInput-input": {
+            fontSize: "20px",
+            color: "#010101"
+          },
+          "& .MuiInputAdornment-root .MuiIconButton-root": {
+            padding: "8px",
+            backgroundColor: "rgba(255,255,255,0.1)"
+          }
+        }}
+
+        InputProps={{
+          startAdornment: (<InputAdornment position="start">
+            <IconButton onClick={callAddImage}>
+              <ImageIcon />
+            </IconButton>
+          </InputAdornment>),
+          endAdornment: (<InputAdornment position="start">
+            <IconButton onClick={sendMessage}>
+              <SendIcon />
+            </IconButton>
+          </InputAdornment>)
+        }}
+      />
     </div>
+  </>
   )
-}
+};
 
 export default Chat;
