@@ -1,9 +1,11 @@
 // import { useEffect, useState, useRef } from 'react';
 import React from "react";
 import {
-  Modal, Box, Typography, IconButton
+  Modal, Box, Typography, IconButton, Button
 } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
+import LogOutIcon from '@mui/icons-material/DoorBackOutlined';
+import DeleteIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 import "./Settings.css"
 
@@ -16,6 +18,23 @@ type SettingsProps = {
 
 const Settings = ({ open, setOpen, user }: SettingsProps) => {
   const close = () => setOpen(false);
+  const deleteMessages = async () => {
+    if (!window.confirm("Are you sure you want to clear your messages?"))
+      return;
+    await fetch("/api/chat/clear", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${user["token"]}`,
+      },
+    });
+    window.location.reload();
+  };
+  const logout = () => {
+    if (!window.confirm("Are you sure you want to logout?"))
+      return;
+    localStorage.removeItem("token");
+    window.location.reload();
+  };
 
   return (<Modal open={open} onClose={close} aria-labelledby="modal--title">
     <Box sx={{
@@ -29,7 +48,10 @@ const Settings = ({ open, setOpen, user }: SettingsProps) => {
       bgcolor: "#2a2b45",
       borderRadius: 2,
       boxShadow: 24,
-      p: 4
+      p: 6,
+      display: "flex",
+      flexDirection: "column",
+      gap: 2
     }}>
     <IconButton sx={{
         position: "absolute" as "absolute",
@@ -43,6 +65,21 @@ const Settings = ({ open, setOpen, user }: SettingsProps) => {
       Settings</Typography>
 
     Hello, {user.email}
+
+    <h6>Account Controls</h6>
+
+    <Button
+      variant="contained"
+      color="error"
+      startIcon={<DeleteIcon />}
+      onClick={deleteMessages}
+      >Delete all Messages.</Button>
+    <Button
+      variant="contained"
+      color="error"
+      startIcon={<LogOutIcon />}
+      onClick={logout}
+      >Log out.</Button>
 
     </Box>
   </Modal>);

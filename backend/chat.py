@@ -43,6 +43,9 @@ async def send(content: List[MessageContent],
     # Return the sent and new for adding to the users chat
     return [incoming, outgoing]
 
+@router.post("/clear")
+async def clear(user: ProtectedUser = Depends(authenticate)):
+    chats.delete_many({"user_id": user.id});
 
 @router.get("/messages")
 async def get(start: str = None, limit: int = 50,
