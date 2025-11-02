@@ -10,13 +10,10 @@ import './Chat.css'
 type ChatProps = {
   user: {[key: string]: string};
 };
-type ImageURL = {
-  url: string;
-}
 type MessageContent = {
   type: string,
   text?: string,
-  image_url?: ImageURL
+  image_url?: string
 };
 type Message = {
   _id: string,
@@ -158,7 +155,7 @@ const Chat = ({ user }: ChatProps) => {
     ]
 
     images.forEach(image => message.push({
-      "type": "image_url", "image_url": { "url": image.url! }
+      "type": "input_image", "image_url": image.url! 
     }));
 
 
@@ -251,12 +248,24 @@ const Chat = ({ user }: ChatProps) => {
             <div key={message["_id"]} className="user">
               <p className="message--time">
                 {getDisplay(message["timestamp"])}</p>
-              <p className="message--content">{message["content"][0].text}</p>
+              <p className="message--content">
+              <div className="images">
+                {message["content"].slice(1).map((image, index) =>
+                    <img key={index} src={image.image_url} className="image" />
+                )}
+              </div>
+              {message["content"][0].text}
+              </p>
             </div>
           ) : (
             <div key={message["_id"]} className="agent">
               <p className="message--time">
                 Agent, {getDisplay(message["timestamp"])}</p>
+              <div className="images">
+                {message["content"].slice(1).map((image, index) =>
+                    <img key={index} src={image.image_url} className="image" />
+                )}
+              </div>
               <p className="message--content">{message["content"][0].text}</p>
             </div>
           )
@@ -275,7 +284,7 @@ const Chat = ({ user }: ChatProps) => {
       <div id="input">
         <input type="file" id="input--file" accept="image/*"
           ref={fileRef} onChange={addImage} />
-        <button id="input--file" onClick={callAddImage}>
+        <button id="input--add" onClick={callAddImage}>
           <AddIcon /></button>
         <TextareaAutosize id="input--text" placeholder="Begin drafting..."
           value={input} onChange={(e) => setInput(e.target.value)}

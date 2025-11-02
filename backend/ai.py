@@ -80,9 +80,17 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "post_text": {"type": "string"}
+                        "post_text": {"type": "string"},
+                        "post_images": {
+                            "type": "array",
+                            "description": "An array of images, each provided as a data URL, images that the user sends or that the assistant generates, that the user wants to include in the tweet",
+                            "items": {
+                                "type": "string",
+                                "description": "A single image encoded as a data URL"
+                            }
+                        }
                     },
-                    "required": ["post_text"]
+                    "required": ["post_text"],
                 }
             }
         ]
@@ -96,9 +104,10 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
             try:
                 args = json.loads(output.arguments)
                 text = args.get("post_text")
+                images = args.get("post_images")
                 if text:
                     xapi = XAPI()
-                    result = xapi.post_tweet(text)
+                    result = xapi.post_tweet(text, images)
                     if result["success"]:
                         return f"Posted to X! https://x.com/postsmither/status/{result['tweet_id']}"
                     else:

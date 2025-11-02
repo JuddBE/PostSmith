@@ -4,6 +4,9 @@ import os
 from typing import List, Dict, Optional
 import json
 import requests
+import base64
+import io
+import tempfile
 
 # Load env variables, the api keys
 load_dotenv()
@@ -30,7 +33,7 @@ class XAPI:
                                     consumer_secret=self.api_secret,
                                     access_token=self.access_token,
                                     access_token_secret=self.access_token_secret,
-                                    wait_on_rate_limit=True)
+                                    wait_on_rate_limit=False)
         
     ####################################################
     ################## Posting & Other #################
@@ -61,7 +64,25 @@ class XAPI:
             
             media_ids = []
             for path in media_paths:
-                media = api_v1.media_upload(path) # upload media first
+                # Extract image bytes
+                _, encoded = path.split(",", 1)
+                needed_padding = len(encoded) % 4
+                if needed_padding != 0:
+                    encoded += "=" * (4 - needed_padding)
+                image_data = base64.b64decode(encoded)
+
+                # Get suffix
+                mime = path.split(";");
+                suffix = ".png"
+                if len(mime) != 0:
+                    if "jpg" in mime[0] or "jpeg" in mime[0]:
+                        suffix = ".jpg"
+
+                # Write to a temp file, upload it
+                with tempfile.NamedTemporaryFile(suffix=suffix) as tmp:
+                    tmp.write(image_data)
+                    tmp.flush()
+                    media = api_v1.media_upload(filename=tmp.name) # upload media first
                 media_ids.append(media.media_id) # collect media IDs
 
             response = self.client.create_tweet(text=text, media_ids=media_ids) # post tweet with media
