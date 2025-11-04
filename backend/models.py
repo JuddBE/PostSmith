@@ -50,6 +50,7 @@ class PublicUser(MongoBaseModel):
 # to obtain about themselves.
 class ProtectedUser(PublicUser):
     email: str
+    x_username: Optional[str] = None
 
 
 # Contains restricted information that should be used
@@ -57,6 +58,9 @@ class ProtectedUser(PublicUser):
 class PrivateUser(ProtectedUser):
     password: str
     seed: str
+    x_access_token: Optional[str] = None
+    x_refresh_token: Optional[str] = None
+    x_expiration: Optional[float] = None
 
 
 # Messages between a user and the service

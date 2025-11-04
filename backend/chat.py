@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import List
 
 from auth import authenticate
-from models import ProtectedUser, PublicUser, Message, MessageContent
+from models import PrivateUser, Message, MessageContent
 from ai import ai_chat
 from db import chats
 
@@ -17,7 +17,7 @@ router = APIRouter()
 # Routes
 @router.post("/send")
 async def send(content: List[MessageContent],
-               user: ProtectedUser = Depends(authenticate)):
+               user: PrivateUser = Depends(authenticate)):
     # The message the user sends
     messages = []
     incoming = Message(
@@ -44,12 +44,12 @@ async def send(content: List[MessageContent],
     return [incoming, outgoing]
 
 @router.post("/clear")
-async def clear(user: ProtectedUser = Depends(authenticate)):
+async def clear(user: PrivateUser = Depends(authenticate)):
     chats.delete_many({"user_id": user.id});
 
 @router.get("/messages")
 async def get(start: str = None, limit: int = 50,
-              user: ProtectedUser = Depends(authenticate)):
+              user: PrivateUser = Depends(authenticate)):
     query = { "_id": { "$lt": ObjectId(start) } } if start else {}
     query["user_id"] = user.id
     messages = [

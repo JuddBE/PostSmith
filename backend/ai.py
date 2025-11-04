@@ -1,13 +1,13 @@
+from dotenv import load_dotenv
+from openai import AzureOpenAI
+from typing import Optional, List
+import json
 import os
 import pydantic
 import tempfile
-from openai import AzureOpenAI
-from typing import Optional, List
-from dotenv import load_dotenv
-import json
 
-from x import XAPI
-from models import MessageContent, PublicUser
+from oauth import post_twitter
+from models import MessageContent, PrivateUser
 from db import chats
 
 
@@ -40,7 +40,23 @@ client = AzureOpenAI(
 
 
 # Main functionality
-async def ai_chat(user: PublicUser, content: List[MessageContent]):
+async def call_function(user, output):
+    try:
+        args = json.loads(output.arguments)
+        if output.name == "publish_tweet":
+            text = args.get("post_text")
+            images = args.get("post_images")
+            if text == None:
+                return "Missing post text, try again later."
+
+            return await post_twitter(user, text, images)
+        else:
+            return "Missing post text."
+    except Exception as e:
+        return "Failed to call function, " + str(e)
+
+
+async def ai_chat(user: PrivateUser, content: List[MessageContent]):
     """Handle logic for calling model endpoint to generate post content,
         including image handling (caption or generate), post/reply/quote handling,
         and social media platform handling (make post fit for desired platform)
@@ -60,15 +76,6 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
         ]}
     ]
 
-    # Call model
-    #model_res = client.chat.completions.create(
-        #messages=messages,
-        #max_tokens=4096,
-        #temperature=1.3,
-        #top_p=1.0,
-        #model=DEPLOYMENT
-    #)
-
     response = client.responses.create(
         model=DEPLOYMENT,
         input=messages,
@@ -83,7 +90,9 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
                         "post_text": {"type": "string"},
                         "post_images": {
                             "type": "array",
-                            "description": "An array of images, each provided as a data URL, images that the user sends or that the assistant generates, that the user wants to include in the tweet",
+                            "description": ("An array of images, each provided as a data URL, "
+                                "images that the user sends or that the assistant generates, that "
+                                "the user wants to include in the tweet"),
                             "items": {
                                 "type": "string",
                                 "description": "A single image encoded as a data URL"
@@ -98,25 +107,9 @@ async def ai_chat(user: PublicUser, content: List[MessageContent]):
 
     output = response.output[0]
 
-    # Return the result
-    if output.type == "function_call" and output.name == "publish_tweet":
-        try:
-            try:
-                args = json.loads(output.arguments)
-                text = args.get("post_text")
-                images = args.get("post_images")
-                if text:
-                    xapi = XAPI()
-                    result = xapi.post_tweet(text, images)
-                    if result["success"]:
-                        return f"Posted to X! https://x.com/postsmither/status/{result['tweet_id']}"
-                    else:
-                        return f"Failed to post to X. {result['error']}"
-                else:
-                    return "Missing post text."
-            except json.JSONDecodeError as e:
-                print("Error decoding function arguments:", e)
-                return "Missing post text."
-        except Exception as e:
-            return "Failed " + str(e)
+    # Forward to processor
+    if output.type == "function_call":
+        return await call_function(user, output)
+
+    # Continue conversation
     return output.content[0].text

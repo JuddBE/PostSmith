@@ -18,6 +18,9 @@ type SettingsProps = {
 
 const Settings = ({ open, setOpen, user }: SettingsProps) => {
   const close = () => setOpen(false);
+  const x_login = () => {
+    window.location.href="/api/oauth/x/login";
+  };
   const deleteMessages = async () => {
     if (!window.confirm("Are you sure you want to clear your messages?"))
       return;
@@ -64,10 +67,14 @@ const Settings = ({ open, setOpen, user }: SettingsProps) => {
     <Typography id="modal--title" component="h2" gutterBottom>
       Settings</Typography>
 
-    Hello, {user.email}
+    <Typography component="h4" gutterBottom>Linked APIS</Typography>
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={x_login}
+      >Link X(Twitter)</Button>
 
-    <h6>Account Controls</h6>
-
+    <Typography component="h4" gutterBottom>Account Controls</Typography>
     <Button
       variant="contained"
       color="error"

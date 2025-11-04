@@ -4,6 +4,7 @@ import './App.css'
 
 import Auth from './components/Auth'
 import Chat from './components/Chat'
+import X from './components/OAuth/X'
 
 import type { User } from './types'
 
@@ -55,6 +56,7 @@ function App() {
       {user !== null ? (
         // Accessible to people with accounts
         <Routes>
+          <Route path="/oauth/x" element={<X user={user!} />} />
           <Route path="/*" element={<Chat user={user!} />} />
         </Routes>
       ) : (

@@ -53,7 +53,7 @@ def authenticate(packed: HTTPAuthorizationCredentials = Depends(security)):
         )
         if user == None:
             raise Exception()
-        return ProtectedUser(**user)
+        return PrivateUser(**user)
     except Exception as e:
         print(e)
         raise HTTPException(
@@ -64,8 +64,8 @@ def authenticate(packed: HTTPAuthorizationCredentials = Depends(security)):
 
 # Routes
 @router.post("/token")
-async def token(user: ProtectedUser = Depends(authenticate)):
-    return user
+async def token(user: PrivateUser = Depends(authenticate)):
+    return ProtectedUser(**user.model_dump())
 
 @router.post("/login")
 async def login(request: LoginRequest):

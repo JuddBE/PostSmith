@@ -63,7 +63,6 @@ const Chat = ({ user }: ChatProps) => {
   const [input, setInput] = useState("");
   const [inputReady, setInputReady] = useState(true);
 
-
   // Get recent messages
   const getMessages = async () => {
     if (fullyLoaded.current || waitingOnMessages.current)
@@ -312,7 +311,7 @@ const Chat = ({ user }: ChatProps) => {
           <p className="message--content">{message["content"][0].text}</p>
         </div>
         )
-      ) : <p id="messages--empty">No messages, start your post!</p>
+      ) : <p id="messages--empty">No messages, start your draft!</p>
       }
       </div>
 
