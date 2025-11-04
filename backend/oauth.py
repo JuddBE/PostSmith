@@ -124,11 +124,11 @@ async def post_twitter(user: PrivateUser, text: str, media_paths: Optional[List[
 
 import logging
 logger = logging.getLogger("uvicorn")
-logger.info(f"CLIENT ID {os.getenv('X_CLIENT_ID')}"),
 # Routes
 @router.get("/x/login")
 async def x_login(request: Request):
     redirect_uri = request.url_for("x_callback")
+    logger.info(f"ID {os.getenv('X_CLIENT_ID')} secret {os.getenv('X_CLIENT_SECRET'}"),
     logger.info(f"redirect uri {redirect_uri}")
     return await x_oauth.authorize_redirect(request, redirect_uri)
 
