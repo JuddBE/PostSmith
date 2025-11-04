@@ -140,6 +140,7 @@ async def x_callback(request: Request):
         token = await x_oauth.authorize_access_token(request)
         user = await x_oauth.get("users/me", token=token)
     except Exception as e:
+        logging.error("callback error", e)
         return RedirectResponse(f"{base}/")
     logger.info(f"callback got token and user")
 
