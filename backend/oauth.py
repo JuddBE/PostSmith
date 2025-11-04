@@ -128,7 +128,7 @@ logger = logging.getLogger("uvicorn")
 @router.get("/x/login")
 async def x_login(request: Request):
     redirect_uri = request.url_for("x_callback")
-    logger.info(f"ID {os.getenv('X_CLIENT_ID')} secret {os.getenv('X_CLIENT_SECRET'}"),
+    logger.info(f"ID {os.getenv('X_CLIENT_ID')} secret {os.getenv('X_CLIENT_SECRET')}"),
     logger.info(f"redirect uri {redirect_uri}")
     return await x_oauth.authorize_redirect(request, redirect_uri)
 
