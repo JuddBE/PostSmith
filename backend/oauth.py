@@ -144,6 +144,7 @@ async def x_callback(request: Request):
             f"&expires_at={token['expires_at']}"
             f"&username={user.json()['data']['username']}"
     )
+    print("@redirecting", frontend_uri)
     return RedirectResponse(frontend_uri)
 
 class SaveRequest(BaseModel):
