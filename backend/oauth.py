@@ -128,14 +128,20 @@ async def x_login(request: Request):
     redirect_uri = request.url_for("x_callback")
     return await x_oauth.authorize_redirect(request, redirect_uri)
 
+
+import logging
+logger = logging.getLogger("uvicorn")
 @router.get("/x/cb")
 async def x_callback(request: Request):
+    logger.info(f"callback start")
     base = str(request.base_url).rstrip("/")
+    logger.info(f"callback base {base}")
     try:
         token = await x_oauth.authorize_access_token(request)
         user = await x_oauth.get("users/me", token=token)
     except Exception as e:
         return RedirectResponse(f"{base}/")
+    logger.info(f"callback got token and user")
 
     frontend_uri = (
             f"{base}/oauth/x"
@@ -144,7 +150,7 @@ async def x_callback(request: Request):
             f"&expires_at={token['expires_at']}"
             f"&username={user.json()['data']['username']}"
     )
-    print("@redirecting", frontend_uri)
+    logger.info(f"callback redirecting to {frontend_uri}")
     return RedirectResponse(frontend_uri)
 
 class SaveRequest(BaseModel):
