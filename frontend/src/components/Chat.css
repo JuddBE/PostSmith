@@ -6,7 +6,7 @@ html, body, #root {
 }
 
 body {
-  background: #242366;
+  background: #1a1a2b;
 }
 
 #root {
@@ -14,7 +14,7 @@ body {
 }
 
 #pane {
-  background: #13131e;
+  background: #2a2b45;
   width: 80%;
   height: 100%;
   margin: 0 auto;
@@ -42,10 +42,10 @@ body {
   max-width: 65%;
 }
 .agent {
-  margin: 8px auto 8px 8px;
+  margin: 16px auto 16px 16px;
 }
 .user {
-  margin: 8px 8px 8px auto;
+  margin: 16px 16px 16px auto;
 }
 .agent>p {
   text-align: left;
@@ -58,7 +58,7 @@ body {
 .message--time {
   user-select: none;
   font-size: 11pt;
-  color: lightgray;
+  color: #b0b0b0;
   margin: 0 10px;
 }
 .message--content {
@@ -71,11 +71,11 @@ body {
   margin: 0;
 }
 .agent>.message--content {
-  background-color: #1D1D2E;
+  background-color: #3c3d5a;
   color: lightgray;
 }
 .user>.message--content {
-  background-color: #025bff;
+  background-color: #3399ff;
   color: black;
 }
 
@@ -83,31 +83,34 @@ body {
 .images {
   display: flex;
   flex-direction: row;
-  padding: 10px;
+  padding: 0px;
   height: fit-content;
   width: 100%;
   justify-content: center;
   align-items: center;
   overflow-x: auto;
-  padding: 10px;
 }
 
 .image--loading,.image {
-  height: 50px;
+  height: 100px;
   margin: 0 10px;
 }
 
 .image--loading {
-  width: 50px;
+  width: 100px;
   background-color: #505050;
 }
 .image {
   width: auto;
 }
 
+#input--file {
+  display: none;
+}
+
 
 /* Inputs. */
-#input {
+/*#input {
   display: flex;
   flex-direction: row;
   padding: 10px 10%;
@@ -119,15 +122,13 @@ body {
 }
 #input--text {
   flex: 1;
-  border-radius: 14px;
   background-color: #242366;
-  border: 2px solid #3432c8;
+  border: 1px solid #3432c8;
+  resize: vertical;
+  border-radius: 12px 12px 0px;
 }
 #input--text:focus {
-  border: 2px solid #d9d9f2;
-}
-#input--file {
-  display: none;
+  outline: 2px dashed #d9d9f2;
 }
 #input--submit {
   font-size: 20px;
@@ -142,5 +143,5 @@ body {
 }
 #input--submit:disabled {
   background-color: #1D1D2E;
-}
+}*/
 

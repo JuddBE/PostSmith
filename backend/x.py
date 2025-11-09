@@ -1,92 +1,85 @@
-import tweepy
-import os
-from typing import Optional, List
-from fastapi import File
 from dotenv import load_dotenv
+from typing import List, Dict, Optional
 
-# Load env
+import base64
+import io
+import json
+import os
+import requests
+import tempfile
+import tweepy
+import time
+
+from models import PrivateUser
+from oauth import x_get_token
+
+
+# Load keys
 load_dotenv()
-
-# Full credentials, mix of v1.1 and v2
-api_key = os.getenv('API_KEY')
-api_secret = os.getenv('API_SECRET')
-access_token = os.getenv('ACCESS_TOKEN')
-access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-bearer_token = os.getenv('BEARER_TOKEN')
+CLIENT_ID = os.getenv('X_CLIENT_ID')
+CLIENT_SECRET = os.getenv('X_CLIENT_SECRET')
 
 
-# NOTE: Mix of v1.1 and v2 endpoints, they are still updating
-client = tweepy.Client(bearer_token=bearer_token,
-                            consumer_key=api_key,
-                            consumer_secret=api_secret,
-                            access_token=access_token,
-                            access_token_secret=access_token_secret,
-                            wait_on_rate_limit=False)
+async def post(user: PrivateUser, text: str, media_paths: Optional[List[str]] = None):
+    # Get the users access token
+    if user.x_access_token == None:
+        return "To post to twitter, first link your account in the settings panel."
+    access_token = await x_get_token(user)
+    if access_token == None:
+        return "Your twitter login expired. To post, relink your account in the settings."
 
-# On rate limit, update database with until reset time
-# Then select a new API st. reset time < current time
+    print(access_token)
 
-# On user post, if they are currently using a valid API, use their token,
-# otherwise have them resign in
+    # Define API connections
+    client = tweepy.Client(
+        consumer_key=CLIENT_ID,
+        consumer_secret=CLIENT_SECRET,
+        access_token=access_token,
+        wait_on_rate_limit=False
+    )
+
+    print(client.get_me().data)
+
+    # Submit the post
+    try:
+        media_ids = []
+
+        response = client.create_tweet(text=text, media_ids=media_ids)
+        tid = response.data["id"]
+
+        return (
+            "Posted to X! View your tweet here: "
+            f"https://x.com/{user.x_username}/status/{tid}"
+        )
+    except Exception as e:
+        return "Failed to post: " + str(e)
 
 
 
-# Functions should just take a ProtectedUser
-def post_on_x(content: str, media_paths: Optional[List[str]] = None, reply_tweet_id: str = None, quote_tweet_id: str = None):
-    """Post tweet, quote tweet, or reply to tweet with mandatory text, optional media.
-
-    Args:
-        text (str): Tweet content (280 char max). #TODO: from LLM
-        media_paths: List of paths to media files. # TODO: from image gen
-
-    Returns:
-        Dictionary with tweet details.
-    """
-    print("Posting on X with content: ", content)
-    print(media_paths)
-    try: # try to post tweet
-        # Conflict prevention
-        print("1")
-        if reply_tweet_id and quote_tweet_id:
-            return {"success": False, "error": "A tweet cannot be both a reply and a quote at the same time."}
-        print("2")
-        # NOTE: For text-only tweets, there would just be no media_paths in the call.
-        if not media_paths:
-            print("Posting:")
-            response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # THIS FAILS AND NEVER CONTINUES, CLIIENT ISSUE???
-            print("Posted Tweet. Response: ", str(response))
-            return {"success": True, "tweet_id": response.data['id']}
 
         # For media tweets, you still need to upload media first and get media_ids
         # This requires v1.1 API for media upload, then pass media_ids to v2
-        # NOTE: Fixed
-        auth = tweepy.OAuthHandler(api_key, api_secret)
-        auth.set_access_token(access_token, access_token_secret)
-        api_v1 = tweepy.API(auth)
+        #auth = tweepy.OAuthHandler(self.api_key, self.api_secret)
+        #auth.set_access_token(self.access_token, self.access_token_secret)
+        #api_v1 = tweepy.API(auth)
+        #for path in media_paths:
+            # Extract image bytes
+            #_, encoded = path.split(",", 1)
+            #needed_padding = len(encoded) % 4
+            #if needed_padding != 0:
+                #encoded += "=" * (4 - needed_padding)
+            #image_data = base64.b64decode(encoded)
 
-        media_ids = []
-        for path in media_paths:
-            media = api_v1.media_upload(path) # upload media first
-            media_ids.append(media.media_id) # collect media IDs
+            # Get suffix
+            #mime = path.split(";");
+            #suffix = ".png"
+            #if len(mime) != 0:
+                #if "jpg" in mime[0] or "jpeg" in mime[0]:
+                    #suffix = ".jpg"
 
-        response = client.create_tweet(text=content, media_ids=media_ids, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # post tweet with media
-        return {"success": True, "tweet_id": response.data['id']}
-
-    except Exception as e: # grab if errors
-        return {"success": False, "error": str(e)}
-
-def like_tweet(tweet_id: str):
-    try:
-        user = client.get_me().data.id
-        client.like(user_id=user, tweet_id=tweet_id)
-        return {"status": True, "liked_tweet_id": tweet_id}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-def retweet_tweet(tweet_id: str):
-    try:
-        user = client.get_me().data.id
-        client.retweet(user_id=user, tweet_id=tweet_id)
-        return {"status": True, "liked_tweet_id": tweet_id}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+            # Write to a temp file, upload it
+            #with tempfile.NamedTemporaryFile(suffix=suffix) as tmp:
+                #tmp.write(image_data)
+                #tmp.flush()
+                #media = api_v1.media_upload(filename=tmp.name) # upload media first
+            #media_ids.append(media.media_id) # collect media IDs
