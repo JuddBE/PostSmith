@@ -53,7 +53,7 @@ def post_on_x(content: str, media_paths: Optional[List[str]] = None, reply_tweet
         # NOTE: For text-only tweets, there would just be no media_paths in the call.
         if not media_paths:
             print("Posting:")
-            response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # THIS FAILS AND NEVER CONTINUES
+            response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # THIS FAILS AND NEVER CONTINUES, CLIIENT ISSUE???
             print("Posted Tweet. Response: ", str(response))
             return {"success": True, "tweet_id": response.data['id']}
 

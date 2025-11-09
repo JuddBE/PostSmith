@@ -16,7 +16,7 @@ load_dotenv()
 
 # Model endpoint config
 ENDPOINT = "https://postsmith-resource.cognitiveservices.azure.com/"
-DEPLOYMENT = "gpt-4o-mini-2024-07-18"
+DEPLOYMENT = "gpt-4-1-mini-2025-04-14-ft-590d5256b8e5429890f8496fc0aeb00e"
 SUBSCRIPTION_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 API_VERSION = "2025-03-01-preview"
 
