@@ -6,7 +6,8 @@ import os
 import pydantic
 import tempfile
 
-from oauth import post_twitter
+from x import post_twitter
+from reddit import reddit_post_text, reddit_query_subreddits
 from models import MessageContent, PrivateUser
 from db import chats
 
@@ -60,8 +61,18 @@ async def call_function(user, output):
                 return "Missing post text, try again later."
 
             return await post_twitter(user, text, images)
+        elif output.name == "reddit_post_text":
+            subreddit = args.get("subreddit")
+            title = args.get("post_title")
+            text = args.get("post_text")
+
+            return reddit_post_text(user, subreddit, title, text)
+        elif output.name == "reddit_search_subreddits":
+            query = args.get("query")
+
+            return reddit_query_subreddits(user, query)
         else:
-            return "Missing post text."
+            return "Bad function name."
     except Exception as e:
         return "Failed to call function, " + str(e)
 
@@ -112,6 +123,38 @@ async def ai_chat(user: PrivateUser, content: List[MessageContent]):
                     "required": ["post_text"],
                 }
             },
+            {
+                "type": "function",
+                "name": "reddit_post_text",
+                "description": "Make a text-based post to Reddit. Needs user confirmation",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "subreddit": {
+                            "type": "string",
+                            "description": "The subreddit to be posted to. do not include the 'r/' or 'u/'"
+                        },
+                        "post_title": {"type": "string"},
+                        "post_text": {"type": "string"},
+                    },
+                    "required": ["subreddit", "post_title", "post_text"],
+                }
+            },
+            {
+                "type": "function",
+                "name": "reddit_search_subreddits",
+                "description": "Search for the top subreddits under a given query.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The query for looking for subreddits. Keep this concise."
+                        },
+                    },
+                    "required": ["query"],
+                }
+            },
             # {
             #     "type": "function",
             #     "name": "generate_image",
@@ -138,8 +181,7 @@ async def ai_chat(user: PrivateUser, content: List[MessageContent]):
 
     # Forward to processor
     if output.type == "function_call":        
-        if output.name == "publish_tweet":
-            return await call_function(user, output)
+        return await call_function(user, output)
         # elif output.name == "generate_image":
         #     args = json.loads(output.arguments)
         #     prompt = args.get("prompt")

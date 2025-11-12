@@ -7,7 +7,9 @@ import os
 
 from auth import router as auth_router
 from chat import router as chat_router
-from oauth import router as oauth_router
+from x import router as x_router
+from reddit import router as r_router
+
 
 load_dotenv()
 
@@ -19,7 +21,8 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_MIDDLEWARE_S
 # Link apis
 app.include_router(auth_router, prefix="/api/auth")
 app.include_router(chat_router, prefix="/api/chat")
-app.include_router(oauth_router, prefix="/api/oauth")
+app.include_router(x_router, prefix="/api/oauth/x")
+app.include_router(r_router, prefix="/api/oauth/reddit")
 
 
 # Link page service

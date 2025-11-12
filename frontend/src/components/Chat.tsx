@@ -286,7 +286,7 @@ const Chat = ({ user }: ChatProps) => {
         <div key={message["_id"]} className="user">
           <p className="message--time">
           {getDisplay(message["timestamp"])}</p>
-          <p className="message--content">
+          <p className="message--content" style={{ whiteSpace: "pre-line" }}>
           <div className="images">
           {message["content"].slice(1).map((image, index) =>
             <img key={index} src={image.image_url} className="image" />
@@ -308,7 +308,7 @@ const Chat = ({ user }: ChatProps) => {
             <img key={index} src={image.image_url} className="image" />
           )}
           </div>
-          <p className="message--content">{message["content"][0].text}</p>
+          <p className="message--content" style={{ whiteSpace: "pre-line" }}>{message["content"][0].text}</p>
         </div>
         )
       ) : <p id="messages--empty">No messages, start your draft!</p>

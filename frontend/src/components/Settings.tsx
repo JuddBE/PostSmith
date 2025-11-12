@@ -21,6 +21,9 @@ const Settings = ({ open, setOpen, user }: SettingsProps) => {
   const x_login = () => {
     window.location.href="/api/oauth/x/login";
   };
+  const reddit_login = () => {
+    window.location.href="/api/oauth/reddit/login";
+  };
   const deleteMessages = async () => {
     if (!window.confirm("Are you sure you want to clear your messages?"))
       return;
@@ -73,6 +76,11 @@ const Settings = ({ open, setOpen, user }: SettingsProps) => {
       color="primary"
       onClick={x_login}
       >Link X(Twitter)</Button>
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={reddit_login}
+      >Link Reddit</Button>
 
     <Typography component="h4" gutterBottom>Account Controls</Typography>
     <Button
