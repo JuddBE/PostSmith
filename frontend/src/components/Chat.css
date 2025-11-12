@@ -14,7 +14,7 @@ body {
 }
 
 #pane {
-  background: #2a2b45;
+  background: #222237;
   width: 80%;
   height: 100%;
   margin: 0 auto;
@@ -24,6 +24,7 @@ body {
 
 /* Messages. */
 #messages {
+  background: #2a2b45;
   flex: 1;
   justify-content: flex-end;
   overflow-y: auto;
@@ -80,7 +81,7 @@ body {
 }
 
 /* Images. */
-.images {
+.images,.inputimages {
   display: flex;
   flex-direction: row;
   padding: 0px;
@@ -90,18 +91,19 @@ body {
   align-items: center;
   overflow-x: auto;
 }
-
-.image--loading,.image {
+.images>.image--loading,.images>.image {
+  height: 300px;
+  width: auto;
+  margin: 0 10px;
+}
+.inputimages>.image--loading,.inputimages>.image {
   height: 100px;
+  width: auto;
   margin: 0 10px;
 }
 
 .image--loading {
-  width: 100px;
   background-color: #505050;
-}
-.image {
-  width: auto;
 }
 
 #input--file {

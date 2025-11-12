@@ -104,8 +104,8 @@ const Chat = ({ user }: ChatProps) => {
       return;
 
     // If near top, load more
-    if (area.scrollTop < 2 * area.clientHeight || area.scrollHeight <= area.clientHeight)
-      getMessages();
+    //if (area.scrollTop < 2 * area.clientHeight || area.scrollHeight <= area.clientHeight)
+      //getMessages();
 
     // If near bottom, follow it
     const bottom = area.scrollHeight - area.clientHeight;
@@ -282,34 +282,35 @@ const Chat = ({ user }: ChatProps) => {
         /*
          * User message field
          * */
-        message["role"] === "user" ? (
-        <div key={message["_id"]} className="user">
-          <p className="message--time">
-          {getDisplay(message["timestamp"])}</p>
-          <p className="message--content" style={{ whiteSpace: "pre-line" }}>
-          <div className="images">
-          {message["content"].slice(1).map((image, index) =>
-            <img key={index} src={image.image_url} className="image" />
-          )}
+        message["role"] === "user"
+          ? message["content"][0]["type"] == "input_text"
+             ? (
+              <div key={message["_id"]} className="user">
+                <p className="message--time">
+                  {getDisplay(message["timestamp"])}
+                </p>
+                <p className="message--content" style={{ whiteSpace: "pre-line" }}>
+                  {message["content"][0].text}
+                </p>
+              </div>
+            ) : (
+              <div className="images">
+                {message["content"].map((image, index) =>
+                  <img key={index} src={image.image_url} className="image" />
+                )}
+              </div>
+            )
+        : (
+          /*
+           * Agent message field
+           * */
+          <div key={message["_id"]} className="agent">
+            <p className="message--time">
+            Agent, {getDisplay(message["timestamp"])}</p>
+            <p className="message--content" style={{ whiteSpace: "pre-line" }}>
+              {message["content"][0].text}
+            </p>
           </div>
-          {message["content"][0].text}
-          </p>
-        </div>
-        ) :
-        /*
-         * Agent message field
-         * */
-        (
-        <div key={message["_id"]} className="agent">
-          <p className="message--time">
-          Agent, {getDisplay(message["timestamp"])}</p>
-          <div className="images">
-          {message["content"].slice(1).map((image, index) =>
-            <img key={index} src={image.image_url} className="image" />
-          )}
-          </div>
-          <p className="message--content" style={{ whiteSpace: "pre-line" }}>{message["content"][0].text}</p>
-        </div>
         )
       ) : <p id="messages--empty">No messages, start your draft!</p>
       }
@@ -318,7 +319,7 @@ const Chat = ({ user }: ChatProps) => {
       {/*
         * User image input displays
         */}
-      <div className="images">
+      <div className="inputimages">
       {images.map((image, index) =>
       !image.loading ? (
         <img key={index} src={image.url} className="image" />
@@ -341,7 +342,7 @@ const Chat = ({ user }: ChatProps) => {
         maxRows={5}
         placeholder="Begin drafting..."
         sx={{
-          margin: "0 10% 10px 10%",
+          margin: "10px 10% 10px 10%",
           "& .MuiOutlinedInput-root": {
             borderRadius: "12px",
             backgroundColor: "#474862",
