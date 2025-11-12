@@ -112,55 +112,54 @@ async def ai_chat(user: PrivateUser, content: List[MessageContent]):
                     "required": ["post_text"],
                 }
             },
-            {
-                "type": "function",
-                "name": "generate_image",
-                "description": (
-                    "Generate an image from a user prompt. "
-                    "Use when the user asks for a picture, drawing, artwork, or any visual content."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "prompt": {"type": "string", "description": "Description of the image to generate"},
-                        "style": {
-                            "type": "string",
-                            "description": "Optional artistic style like 'vivid', 'natural', 'sketch', etc.",
-                        },
-                    },
-                    "required": ["prompt"],
-                },
-            },
+            # {
+            #     "type": "function",
+            #     "name": "generate_image",
+            #     "description": (
+            #         "Generate an image from a user prompt. "
+            #         "Use when the user asks for a picture, drawing, artwork, or any visual content."
+            #     ),
+            #     "parameters": {
+            #         "type": "object",
+            #         "properties": {
+            #             "prompt": {"type": "string", "description": "Description of the image to generate"},
+            #             "style": {
+            #                 "type": "string",
+            #                 "description": "Optional artistic style like 'vivid', 'natural', 'sketch', etc.",
+            #             },
+            #         },
+            #         "required": ["prompt"],
+            #     },
+            # },
         ]
     )
 
     output = response.output[0]
 
     # Forward to processor
-    if output.type == "function_call":
-        if output.name == "generate_image":
-            args = json.loads(output.arguments)
-            prompt = args.get("prompt")
-
-            # Call image generation
-            img_response = image_client.images.generate(
-                model=IMAGE_DEPLOYMENT,
-                prompt=prompt,
-                n=1,
-                size="1024x1024",
-                quality="standard",
-                response_format="b64_json"
-            )
-
-            # Get image data TODO: CHECK THIS WORKS!!!
-            image_b64 = json.loads(img_response.model_dump_json())['data'][0]['b64_json']
-            data_url = f"data:image/png;base64,{image_b64}"
-
-            # Return as data URL
-            return data_url
-        
-        elif output.name == "publish_tweet":
+    if output.type == "function_call":        
+        if output.name == "publish_tweet":
             return await call_function(user, output)
+        # elif output.name == "generate_image":
+        #     args = json.loads(output.arguments)
+        #     prompt = args.get("prompt")
+
+        #     # Call image generation
+        #     img_response = image_client.images.generate(
+        #         model=IMAGE_DEPLOYMENT,
+        #         prompt=prompt,
+        #         n=1,
+        #         size="1024x1024",
+        #         quality="standard",
+        #         response_format="b64_json"
+        #     )
+
+        #     # Get image data TODO: CHECK THIS WORKS!!!
+        #     image_b64 = json.loads(img_response.model_dump_json())['data'][0]['b64_json']
+        #     data_url = f"data:image/png;base64,{image_b64}"
+
+        #     # Return as data URL
+        #     return data_url
 
     # Continue conversation
     return output.content[0].text
