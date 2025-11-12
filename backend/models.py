@@ -52,6 +52,7 @@ class ProtectedUser(PublicUser):
     email: str
     x_username: Optional[str] = None
     r_username: Optional[str] = None
+    images: List[str] = []
 
 
 # Contains restricted information that should be used

@@ -51,27 +51,29 @@ def reddit_post_text(user, subreddit, title, content):
         return "Posted to Reddit! View your post here: " + post.url
     except Exception as e:
         logging.error(e)
-        return "Failed to post"
+        return "Failed to post."
 
 def reddit_query_subreddits(user, query):
-    #try:
-    reddit = praw.Reddit(
-        client_id=REDDIT_CLIENT_ID,
-        client_secret=REDDIT_CLIENT_SECRET,
-        refresh_token=user.r_refresh_token,
-        user_agent=REDDIT_USER_AGENT
-    )
+    try:
+        reddit = praw.Reddit(
+            client_id=REDDIT_CLIENT_ID,
+            client_secret=REDDIT_CLIENT_SECRET,
+            refresh_token=user.r_refresh_token,
+            user_agent=REDDIT_USER_AGENT
+        )
 
-    subreddits = reddit.subreddits.search(query, limit=5)
+        subreddits = reddit.subreddits.search(query, limit=5)
 
-    results = ["Top results:"]
-    for ind, sub in enumerate(subreddits):
-        results.append(f"    {ind + 1}. r/{sub.display_name}  \"{sub.title}\"  Users: {sub.subscribers}")
-    if (len(results) == 1):
-        return "None found."
-    return "\n".join(results)
-    #except Exception as e:
-        #return "Failed to search: " + e
+        results = ["Top results:"]
+        for ind, sub in enumerate(subreddits):
+            results.append(f"    {ind + 1}. r/{sub.display_name}  \"{sub.title}\"  Users: {sub.subscribers}")
+        if (len(results) == 1):
+            return "None found."
+        return "\n".join(results)
+    except Exception as e:
+        logging.error("Failed to query subreddits")
+        logging.error(e)
+        return "Failed to search for subreddits."
 
 
 

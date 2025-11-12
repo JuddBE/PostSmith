@@ -10,6 +10,7 @@ import logging
 import os
 import time
 
+from tools import uri_to_file
 from auth import authenticate
 from models import ProtectedUser, PrivateUser
 from db import users, get_user
@@ -88,7 +89,11 @@ async def x_get_token(user: PrivateUser):
         return None
 
 
-async def post_twitter(user: PrivateUser, text: str, media_paths: Optional[List[str]] = None):
+async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[List[str]] = None):
+    #print("image indices", image_indices)
+    #print(list(map(uri_to_file, image_indices)))
+    #return "Temp debug message"
+
     # Get the access token
     if user.x_access_token == None:
         return "To post to twitter, first link your account in the settings panel."
