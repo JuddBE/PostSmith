@@ -8,7 +8,7 @@ import tempfile
 
 from x import post_twitter
 from reddit import reddit_post_text, reddit_query_subreddits
-from models import MessageContent, PrivateUser, Message
+from models import PrivateUser, Message
 from db import chats, users
 
 
@@ -18,8 +18,8 @@ load_dotenv()
 # Model endpoint config
 ENDPOINT = "https://postsmith-resource.cognitiveservices.azure.com/"
 IMAGE_ENDPOINT = "https://ju876-mhveyjts-eastus.cognitiveservices.azure.com/"
-DEPLOYMENT = "gpt-4-1-mini-2025-04-14-ft-590d5256b8e5429890f8496fc0aeb00e"
-DEPLOYMENT = "gpt-4o-mini-2024-07-18"
+CHAT_DEPLOYMENT = "gpt-4-1-mini-2025-04-14-ft-590d5256b8e5429890f8496fc0aeb00e"
+DESCRIBE_DEPLOYMENT = "gpt-4o-mini-2024-07-18"
 IMAGE_DEPLOYMENT = "dall-e-3"
 SUBSCRIPTION_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 IMAGE_API_KEY = os.getenv('AZURE_OPENAI_API_KEY_IMAGE')
@@ -34,7 +34,18 @@ SYSTEM_PROMPT = (
     "Unless specified by the user, "
         "do not use any formal or fancy words. Do not use emojis, "
         "hashtags, or em dashes. Do not mention that you are an AI model. Do not swear. "
-    "Ask for an explicit confirmation before using the posting functions."
+    "Ask for an explicit confirmation before using the posting functions. "
+    "Images are provided to you in the following structure: "
+    "<IMAGE index={number}>\n"
+    "text_description: {description of the image}\n"
+    "</IMAGE> "
+    "The 'index' is the authoritative reference to the externel image storage. "
+    "The 'text_description' is a human-readable interpretation of the image, *not* a replacement "
+    "for the actual image. "
+    "When reasoning about images, the description can be guidance, but the index is the actual "
+    "identity. "
+    "When a tool function requires an image, always provide the numeric index exactly as given. "
+    "Do not rewrite or alter the '<IMAGE>' tag format when generating responses."
 )
 
 
@@ -98,29 +109,44 @@ async def call_function(user, output):
         return "Failed to call function, " + str(e)
 
 
-async def ai_chat(user: PrivateUser, content: List[MessageContent]):
-    """Handle logic for calling model endpoint to generate post content,
-        including image handling (caption or generate), post/reply/quote handling,
-        and social media platform handling (make post fit for desired platform)
+async def ai_describe(imageuri):
+    response = client.responses.create(
+            model=DESCRIBE_DEPLOYMENT,
+            input=[
+                {
+                    "role": "system",
+                    "content": ("You are a visual analyst. Describe and interpret any image "
+                        "you receive clearly and accurately.")
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": "Describe this image in detail."},
+                        {"type": "input_image", "image_url": imageuri}
+                    ]
+                }
+            ],
+        )
+    return response.output[0].content[0].text
 
-    Args:
-        content (List[MessageContent]: User input prompt.
-    """
-    # Get a list of system, then history of conversation, then the new user message
+
+
+async def ai_chat(user: PrivateUser):
+    # Get a list of system descr, then history of conversation, then the new user message
     history = chats.find(
             {"user_id": user.id}, {"_id": 0, "role": 1, "content": 1}
     ).sort("_id")
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        *history,
-        {"role": "user", "content": [
-            e.model_dump(exclude_none=True) for e in content
-        ]}
+        *[
+            { "role": message["role"], "content": message["content"] }
+            for message in history
+        ],
     ]
-    print(len(user.images))
+    print(messages)
 
     response = client.responses.create(
-        model=DEPLOYMENT,
+        model=CHAT_DEPLOYMENT,
         input=messages,
         tools=[
             {
@@ -138,8 +164,7 @@ async def ai_chat(user: PrivateUser, content: List[MessageContent]):
                                 " uploaded images that the user wants to include in the post"),
                             "items": {
                                 "type": "integer",
-                                "description": ("An index into the available image array. "
-                                    "corresponding to which image the user wants to include")
+                                "description": "An image index"
                             }
                         }
                     },
@@ -210,19 +235,27 @@ async def ai_chat(user: PrivateUser, content: List[MessageContent]):
         response = output.content[0].text
 
     # Format the response
+    # Pure text response
     if isinstance(response, str):
-        # Pure text response
         message = Message(
-            user_id=user.id,
-            role="assistant",
-            content=[{"type": "output_text", "text": response}]
-        )
+                user_id=user.id,
+                role="assistant",
+                content_type="text",
+                content=response
+            )
+    # Image generation
     elif response[0] == "image":
-        # Image generation
-        message = Message(
-            user_id=user.id,
-            role="user",
-            content=[{"type": "input_image", "image_url": response[1]}]
-        )
+        # Get a description of the image
+        description = await ai_describe(response[1])
+        index = len(user.images)
         users.update_one({"_id": user.id}, {"$push": {"images": response[1]}})
+
+        # Format for an image description/submission
+        message = Message(
+                user_id=user.id,
+                role="assistant",
+                content_type="image",
+                content=f"<IMAGE index={index}>\ntext_description: {description}\n</IMAGE>",
+                imageuri=response[1]
+            )
     return message

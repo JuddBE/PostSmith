@@ -90,9 +90,9 @@ async def x_get_token(user: PrivateUser):
 
 
 async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[List[str]] = None):
-    #print("image indices", image_indices)
+    print("image indices", image_indices)
     #print(list(map(uri_to_file, image_indices)))
-    #return "Temp debug message"
+    return "Temp debug message"
 
     # Get the access token
     if user.x_access_token == None:

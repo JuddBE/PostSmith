@@ -51,7 +51,10 @@ def reddit_post_text(user, subreddit, title, content):
         return "Posted to Reddit! View your post here: " + post.url
     except Exception as e:
         logging.error(e)
-        return "Failed to post."
+        try:
+            return "Failed to post. " + str(e)
+        except:
+            return "Failed to post. Maybe a bad subreddit."
 
 def reddit_query_subreddits(user, query):
     try:

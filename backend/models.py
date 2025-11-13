@@ -67,13 +67,10 @@ class PrivateUser(ProtectedUser):
 
 
 # Messages between a user and the service
-class MessageContent(BaseModel):
-    type: str
-    text: Optional[str] = None
-    image_url: Optional[str] = None
-
 class Message(MongoBaseModel):
     user_id: IdField
     role: str
-    content: List[MessageContent]
+    content_type: str
+    content: str
+    imageuri: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)

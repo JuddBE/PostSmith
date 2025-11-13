@@ -20,16 +20,13 @@ import "./Chat.css";
 type ChatProps = {
   user: {[key: string]: string};
 };
-type MessageContent = {
-  type: string,
-  text?: string,
-  image_url?: string
-};
 type Message = {
   _id: string,
   user_id: string,
   role: string,
-  content: [MessageContent],
+  content_type: string,
+  content: string,
+  imageuri?: string
   timestamp: string
 };
 
@@ -47,8 +44,7 @@ type Image = {
 const Chat = ({ user }: ChatProps) => {
   // States variables
   const [messages, setMessages] = useState<Message[]>([]);
-  const [images, setImages] = useState<Image[]>([]);
-  const [loadingImages, setLoadingImages] = useState<number>(0);
+  const [image, setImage] = useState<Image | undefined>(undefined);
   const [open, setOpen] = useState<boolean>(false);
   const lastMessage = useRef<string | null>(null);
   const waitingOnReply = useRef(false);
@@ -138,39 +134,24 @@ const Chat = ({ user }: ChatProps) => {
 
   // Disable button when there is no text
   const validateInput = () => {
-    return input.trim() !== "";
+    return input.trim() !== "" || (image !== undefined && !image.loading);
   };
   useEffect(() => {
-    if (waitingOnReply.current || loadingImages !== 0)
+    if (waitingOnReply.current || (!image || !image.loading))
       return;
     setInputReady(validateInput());
-  }, [input, loadingImages]);
+  }, [waitingOnReply.current, input, image, image?.loading]);
 
 
   // Submit message to the API
   const sendMessage = async () => {
-    let ready = true;
-    images.forEach(image => {
-      if (image.loading || !image.url) {
-        ready = false;
-      }
-    });
-    if (!ready) {
-      alert("Input images still loading...");
+    if (image && image.loading) {
+      alert("Input image still loading...");
       return;
     }
 
     waitingOnReply.current = true;
     setInputReady(false);
-
-    const message: MessageContent[] = [
-      {"type": "input_text", "text": input}
-    ]
-
-    images.forEach(image => message.push({
-      "type": "input_image", "image_url": image.url! 
-    }));
-
 
     // Post data
     const response = await fetch("/api/chat/send", {
@@ -179,7 +160,10 @@ const Chat = ({ user }: ChatProps) => {
         "Authorization": `Bearer ${user["token"]}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(message)
+      body: JSON.stringify({
+        "text": input,
+        "imageuri": image?.url
+      })
     });
     if (response.status != 200) {
       alert("Bad connection");
@@ -189,7 +173,7 @@ const Chat = ({ user }: ChatProps) => {
     }
 
     setInput("");
-    setImages([]);
+    setImage(undefined);
 
     // Add the result to the message pannel
     const body = await response.json();
@@ -225,27 +209,20 @@ const Chat = ({ user }: ChatProps) => {
 
   const addImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
-    const images: Image[] = files.map(file => ({
-      loading: true,
-      id: crypto.randomUUID(),
-      file
-    }));
-    setImages(prev => [...prev, ...images]);
-    setLoadingImages(prev => prev + images.length);
-    images.forEach(image => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImages(prev => prev.map(
-          itr => itr.id === image.id ? {
-            ...itr,
-            url: reader.result as string,
-            loading: false
-          } : itr
-        ));
-        setLoadingImages(prev => prev - 1);
-      };
-      reader.readAsDataURL(image.file);
-    });
+    if (files.length == 0)
+      return;
+    const file = files[0]
+
+    const id = crypto.randomUUID();
+    setImage({loading: true, id, file});
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImage(prev => prev?.id === id
+        ? {...prev, url: reader.result as string, loading: false}
+        : prev);
+    };
+    reader.readAsDataURL(file);
   };
   const callAddImage = (_e: React.MouseEvent<HTMLButtonElement>) => {
     fileRef.current?.click();
@@ -277,56 +254,42 @@ const Chat = ({ user }: ChatProps) => {
         * Message display
         * */}
       <div id="messages" ref={messageAreaRef}>
-      {messages.length !== 0 ?
-      messages.map((message, _index) =>
-        /*
-         * User message field
-         * */
-        message["role"] === "user"
-          ? message["content"][0]["type"] == "input_text"
-             ? (
-              <div key={message["_id"]} className="user">
-                <p className="message--time">
-                  {getDisplay(message["timestamp"])}
-                </p>
-                <p className="message--content" style={{ whiteSpace: "pre-line" }}>
-                  {message["content"][0].text}
-                </p>
-              </div>
-            ) : (
-              <div className="images">
-                {message["content"].map((image, index) =>
-                  <img key={index} src={image.image_url} className="image" />
-                )}
-              </div>
-            )
-        : (
-          /*
-           * Agent message field
-           * */
-          <div key={message["_id"]} className="agent">
+      {messages.length !== 0 ? (
+        messages.map((message, _index) => (
+          <div key={message["_id"]} className={message.role === "user" ? "user" : "agent"}>
             <p className="message--time">
-            Agent, {getDisplay(message["timestamp"])}</p>
+              {getDisplay(message["timestamp"])}
+            </p>
+
             <p className="message--content" style={{ whiteSpace: "pre-line" }}>
-              {message["content"][0].text}
+              {message["content_type"] === "text" ? (
+                message["content"]
+              ) : (
+                <img src={message["imageuri"]!} />
+              )}
             </p>
           </div>
-        )
-      ) : <p id="messages--empty">No messages, start your draft!</p>
-      }
+        ))
+      ) : waitingOnMessages.current ? (
+        <p id="messages--empty">Loading history...</p>
+      ) : (
+        <p id="messages--empty">No messages yet, start your draft!</p>
+      )}
       </div>
 
       {/*
         * User image input displays
         */}
-      <div className="inputimages">
-      {images.map((image, index) =>
-      !image.loading ? (
-        <img key={index} src={image.url} className="image" />
-      ) : (
-        <div key={index} className="image--loading" />
-      )
-      )}
+      <div id="inputimage">
+        {
+          image ? (
+            !image.loading ? (
+              <img src={image.url} />
+            ) : (
+              <div className="loadingimg" />
+            )
+          ) : null
+        }
       </div>
 
 

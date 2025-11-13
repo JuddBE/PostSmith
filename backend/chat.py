@@ -2,11 +2,11 @@ from bson import ObjectId
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 from auth import authenticate
-from models import PrivateUser, Message, MessageContent
-from ai import ai_chat
+from models import PrivateUser, Message
+from ai import ai_chat, ai_describe
 from db import chats, users
 
 
@@ -15,50 +15,62 @@ router = APIRouter()
 
 
 # Routes
+class SendRequest(BaseModel):
+    text: Optional[str] = ""
+    imageuri: Optional[str] = ""
 @router.post("/send")
-async def send(content: List[MessageContent],
+async def send(request: SendRequest,
                user: PrivateUser = Depends(authenticate)):
-    # The response
-    outgoing = await ai_chat(user, content)
+    new_messages = []
+    # If there was an image input, attempt to push it to the dataset
+    if request.imageuri or "" != "":
+        # Get a description of the image
+        description = await ai_describe(request.imageuri)
+        index = len(user.images)
+        users.update_one({"_id": user.id}, {"$push": {"images": request.imageuri}})
 
-    # Add to database and return value
-    if len(content) == 0 or content[0].type != "input_text":
-        raise HTTPException(status_code=400, detail="Bad input format")
-    messages = []
+        # Format image message
+        message = Message(
+                user_id=user.id,
+                role="user",
+                content_type="image",
+                content=f"<IMAGE index={index}>\ntext_description: {description}\n</IMAGE>",
+                imageuri=request.imageuri
+            )
 
-    # Add any images seperately
-    if len(content) > 1:
-        images = Message(
-            user_id=user.id,
-            role="user",
-            content=content[1:]
-        )
-        result = chats.insert_one(images.model_dump(exclude_none=True))
-        images.id = result.inserted_id
-        messages.append(images)
-        users.update_one({"_id": user.id}, {"$push": {"images": {"$each":
-            [cont.image_url for cont in content[1:]]}}})
+        # Push to database
+        result = chats.insert_one(message.model_dump(exclude_none=True))
+        message.id = result.inserted_id
+        new_messages.append(message)
 
-    # Add the text input
-    incoming = Message(
-        user_id=user.id,
-        role="user",
-        content=content[:1]
-    )
-    result = chats.insert_one(incoming.model_dump(exclude_none=True))
-    incoming.id = result.inserted_id
-    messages.append(incoming)
+    # If there was a text input, attempt to push it to the dataset
+    if (request.text or "").strip() != "":
+        # Format text message
+        message = Message(
+                user_id=user.id,
+                role="user",
+                content_type="text",
+                content=request.text
+            )
 
-    # Add the response
-    result = chats.insert_one(outgoing.model_dump(exclude_none=True))
-    outgoing.id = result.inserted_id
-    messages.append(outgoing)
+        # Push to database and add to return value
+        result = chats.insert_one(message.model_dump(exclude_none=True))
+        message.id = result.inserted_id
+        new_messages.append(message)
 
-    print("returned structure")
-    print(messages)
+    # No changes, no reason to call model
+    if len(new_messages) == 0:
+        return []
 
-    # Return the sent and new for adding to the users chat
-    return messages
+    # Call the chat model and push the result to the database
+    response = await ai_chat(user)
+    result = chats.insert_one(response.model_dump(exclude_none=True))
+    response.id = result.inserted_id
+    new_messages.append(response)
+
+    # Return the new messages
+    return new_messages
+
 
 @router.post("/clear")
 async def clear(user: PrivateUser = Depends(authenticate)):
