@@ -32,7 +32,7 @@ const X = ({ user }: XProps) => {
       upload();
   }, [token, token_secret, username]);
 
-  return (<h1>Loading...</h1>);
+  return (<h2>Linking account...</h2>);
 };
 
 export default X;

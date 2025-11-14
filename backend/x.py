@@ -133,3 +133,14 @@ async def x_save(request: SaveRequest, user: PrivateUser = Depends(authenticate)
     )
 
 
+
+@router.post("/unlink")
+async def x_unlink(user: PrivateUser = Depends(authenticate)):
+    users.update_one(
+        {"_id": user.id},
+        {"$unset": {
+            "x_token": 1,
+            "x_token_secret": 1,
+            "x_username": 1
+        }}
+    )

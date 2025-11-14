@@ -30,7 +30,7 @@ const Reddit = ({ user }: RedditProps) => {
       upload();
   }, [refresh_token]);
 
-  return (<h1>Loading...</h1>);
+  return (<h2>Linking account...</h2>);
 };
 
 export default Reddit;

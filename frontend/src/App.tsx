@@ -7,13 +7,11 @@ import Chat from './components/Chat'
 import X from './components/OAuth/X'
 import Reddit from './components/OAuth/Reddit'
 
-import type { User } from './types'
-
 
 
 function App() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{[key: string]: string} | null>(null);
   const [loading, setLoading] = useState(true);
 
   // On token change, try authenticating
@@ -59,7 +57,7 @@ function App() {
         <Routes>
           <Route path="/oauth/x" element={<X user={user!} />} />
           <Route path="/oauth/reddit" element={<Reddit user={user!} />} />
-          <Route path="/*" element={<Chat user={user!} />} />
+          <Route path="/*" element={<Chat user={user!} setUser={setUser} />} />
         </Routes>
       ) : (
         // Accessible to people without accounts

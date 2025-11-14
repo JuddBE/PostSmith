@@ -150,3 +150,14 @@ async def reddit_save(request: SaveRequest, user: PrivateUser = Depends(authenti
     )
 
 
+@router.post("/unlink")
+async def reddit_unlink(user: PrivateUser = Depends(authenticate)):
+    users.update_one(
+        {"_id": user.id},
+        {"$unset": {
+            "r_refresh_token": 1,
+            "r_username": 1
+        }}
+    )
+
+

@@ -7,8 +7,8 @@ import {
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import ImageIcon from "@mui/icons-material/Image";
+import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from "@mui/icons-material/Send";
-
 import Settings from "./Settings";
 
 import "./Chat.css";
@@ -19,15 +19,16 @@ import "./Chat.css";
  * */
 type ChatProps = {
   user: {[key: string]: string};
+  setUser: React.Dispatch<React.SetStateAction<{[key: string]: string} | null>>;
 };
 type Message = {
-  _id: string,
-  user_id: string,
-  role: string,
-  content_type: string,
-  content: string,
-  imageuri?: string
-  timestamp: string
+  _id: string;
+  user_id: string;
+  role: string;
+  content_type: string;
+  content: string;
+  imageuri?: string;
+  timestamp: string;
 };
 
 type Image = {
@@ -41,7 +42,7 @@ type Image = {
 /*
  * Behavior
  * */
-const Chat = ({ user }: ChatProps) => {
+const Chat = ({ user, setUser }: ChatProps) => {
   // States variables
   const [messages, setMessages] = useState<Message[]>([]);
   const [image, setImage] = useState<Image | undefined>(undefined);
@@ -280,7 +281,7 @@ const Chat = ({ user }: ChatProps) => {
       onClick={openSettings}
       ><SettingsIcon />
     </IconButton>
-    <Settings open={open} setOpen={setOpen} user={user} />
+    <Settings open={open} setOpen={setOpen} user={user} setUser={setUser} />
 
     {/* Center pane */}
     <div id="pane">
@@ -325,15 +326,24 @@ const Chat = ({ user }: ChatProps) => {
         * User image input displays
         */}
       <div id="inputimage">
-        {
-          image ? (
+        { image && (
             !image.loading ? (
-              <img src={image.url} />
+              <>
+                <img src={image.url} />
+                <IconButton
+                  sx={{
+                    padding: "8px",
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    color: "gray"
+                  }}
+                  onClick={() => setImage(undefined)}
+                  ><CloseIcon />
+                </IconButton>
+              </>
             ) : (
               <div className="loadingimg" />
             )
-          ) : null
-        }
+        )}
       </div>
 
 

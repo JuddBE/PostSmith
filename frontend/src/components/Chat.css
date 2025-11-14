@@ -102,6 +102,7 @@ img {
 }
 #inputimage>img{
   height: 100px;
+  margin: 10px;
 }
 .loadingimg {
   height: 100px;

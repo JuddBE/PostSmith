@@ -14,15 +14,40 @@ type SettingsProps = {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   user: {[key: string]: string};
+  setUser: React.Dispatch<React.SetStateAction<{[key: string]: string} | null>>;
 };
 
-const Settings = ({ open, setOpen, user }: SettingsProps) => {
+const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
   const close = () => setOpen(false);
   const x_login = () => {
     window.location.href="/api/oauth/x/login";
   };
+  const x_unlink = async () => {
+    await fetch("/api/oauth/x/unlink", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${user["token"]}`,
+      },
+    });
+    setUser(prev => {
+      const { x_username, ...rest } = prev!;
+      return rest;
+    });
+  };
   const reddit_login = () => {
     window.location.href="/api/oauth/reddit/login";
+  };
+  const reddit_unlink = async () => {
+    await fetch("/api/oauth/reddit/unlink", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${user["token"]}`,
+      },
+    });
+    setUser(prev => {
+      const { r_username, ...rest } = prev!;
+      return rest;
+    });
   };
   const deleteMessages = async () => {
     if (!window.confirm("Are you sure you want to clear your messages?"))
@@ -71,16 +96,36 @@ const Settings = ({ open, setOpen, user }: SettingsProps) => {
       Settings</Typography>
 
     <Typography component="h4" gutterBottom>Linked APIS</Typography>
-    <Button
-      variant="contained"
-      color="primary"
-      onClick={x_login}
-      >Link X(Twitter)</Button>
-    <Button
-      variant="contained"
-      color="primary"
-      onClick={reddit_login}
-      >Link Reddit</Button>
+    {
+      !user.x_username ? (
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={x_login}
+          >Link Twitter</Button>
+      ) : (
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={x_unlink}
+          >Unlink Twitter</Button>
+      )
+    }
+    {
+      !user.r_username ? (
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={reddit_login}
+          >Link Reddit</Button>
+      ) : (
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={reddit_unlink}
+          >Unlink Reddit</Button>
+      )
+    }
 
     <Typography component="h4" gutterBottom>Account Controls</Typography>
     <Button

@@ -107,7 +107,7 @@ async def get(start: str = None, limit: int = 50,
         Message(**message) for message in
             chats.find(query)
                 .sort("_id", -1)
-                .limit(limit)
+                #.limit(limit)
     ]
     messages.reverse()
 
