@@ -62,7 +62,7 @@ body {
   color: #b0b0b0;
   margin: 0 10px;
 }
-.message--content {
+.message--content,.message--status {
   background-color: #201F42;
   font-size: 16pt;
   font-weight: 500;
@@ -71,9 +71,14 @@ body {
   width: fit-content;
   margin: 0;
 }
-.agent>.message--content {
+.agent>.message--content,.message--status {
   background-color: #3c3d5a;
+}
+.agent>.message--content {
   color: lightgray;
+}
+.message--status {
+  color: darkgray;
 }
 .user>.message--content {
   background-color: #3399ff;

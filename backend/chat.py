@@ -1,8 +1,11 @@
 from bson import ObjectId
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional
+import asyncio
+import json
 
 from auth import authenticate
 from models import PrivateUser, Message
@@ -18,13 +21,13 @@ router = APIRouter()
 class SendRequest(BaseModel):
     text: Optional[str] = ""
     imageuri: Optional[str] = ""
-@router.post("/send")
-async def send(request: SendRequest,
-               user: PrivateUser = Depends(authenticate)):
-    new_messages = []
+async def sendProcessor(request: SendRequest, user: PrivateUser):
+    inputs = 0
     # If there was an image input, attempt to push it to the dataset
     if request.imageuri or "" != "":
         # Get a description of the image
+        yield (json.dumps({"status": 1, "message": "Processing input..."}) + "\n").encode()
+        await asyncio.sleep(0)
         description = await ai_describe(request.imageuri)
         index = len(user.images)
         users.update_one({"_id": user.id}, {"$push": {"images": request.imageuri}})
@@ -42,7 +45,10 @@ async def send(request: SendRequest,
         # Push to database
         result = chats.insert_one(message.model_dump(exclude_none=True))
         message.id = result.inserted_id
-        new_messages.append(message)
+        yield (message.json(exclude_none=True) + "\n").encode()
+        await asyncio.sleep(0)
+        inputs += 1
+
 
     # If there was a text input, attempt to push it to the dataset
     if (request.text or "").strip() != "":
@@ -57,20 +63,34 @@ async def send(request: SendRequest,
         # Push to database and add to return value
         result = chats.insert_one(message.model_dump(exclude_none=True))
         message.id = result.inserted_id
-        new_messages.append(message)
+        yield (message.json(exclude_none=True) + "\n").encode()
+        await asyncio.sleep(0)
+        inputs += 1
+
 
     # No changes, no reason to call model
-    if len(new_messages) == 0:
-        return []
+    if inputs == 0:
+        return
 
     # Call the chat model and push the result to the database
-    response = await ai_chat(user)
-    result = chats.insert_one(response.model_dump(exclude_none=True))
-    response.id = result.inserted_id
-    new_messages.append(response)
+    message = None
+    async for response in ai_chat(user):
+        if isinstance(response, str):
+            yield (json.dumps({"status": 1, "message": response}) + "\n").encode()
+            await asyncio.sleep(0)
+        else:
+            message = response
 
-    # Return the new messages
-    return new_messages
+    result = chats.insert_one(message.model_dump(exclude_none=True))
+    message.id = result.inserted_id
+    yield (message.json(exclude_none=True) + "\n").encode()
+    await asyncio.sleep(0)
+    return
+
+@router.post("/send")
+async def send(request: SendRequest,
+               user: PrivateUser = Depends(authenticate)):
+    return StreamingResponse(sendProcessor(request, user), media_type="text/plain")
 
 
 @router.post("/clear")

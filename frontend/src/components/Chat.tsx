@@ -46,6 +46,7 @@ const Chat = ({ user }: ChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [image, setImage] = useState<Image | undefined>(undefined);
   const [open, setOpen] = useState<boolean>(false);
+  const [status, setStatus] = useState("");
   const lastMessage = useRef<string | null>(null);
   const waitingOnReply = useRef(false);
   const waitingOnMessages = useRef(false);
@@ -153,6 +154,11 @@ const Chat = ({ user }: ChatProps) => {
     waitingOnReply.current = true;
     setInputReady(false);
 
+    const input_text = input;
+    const input_image = image;
+    setInput("");
+    setImage(undefined);
+
     // Post data
     const response = await fetch("/api/chat/send", {
       method: "POST",
@@ -161,27 +167,55 @@ const Chat = ({ user }: ChatProps) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "text": input,
-        "imageuri": image?.url
+        "text": input_text,
+        "imageuri": input_image?.url
       })
     });
-    if (response.status != 200) {
+    if (response.status != 200 || !response.body) {
       alert("Bad connection");
       waitingOnReply.current = false;
       setInputReady(validateInput());
       return;
     }
 
-    setInput("");
-    setImage(undefined);
+    // Stream body
+    const decoder = new TextDecoder()
+    const reader = response.body.getReader();
 
-    // Add the result to the message pannel
-    const body = await response.json();
+    let buffer = "";
+    while (true) {
+      // Get available data
+      const { done, value } = await reader.read();
+      if (done) {
+        setStatus("");
+        break;
+      }
+      buffer += decoder.decode(value, { stream: true });
+
+      // Set messages
+      const lines = buffer.split("\n")
+      buffer = lines.pop() || ""
+      for (const line of lines) {
+        if (!line)
+          continue;
+        const content = JSON.parse(line);
+        if ("status" in content) {
+          setStatus(content["message"]);
+        } else {
+          setMessages((previous) => {
+            return [...previous, content]
+          });
+        }
+      }
+    }
+
+
+    /*const body = await response.json();
     setMessages((previous) => {
       return [...previous, ...body]
     });
     if (lastMessage.current === null)
-      lastMessage.current = body[body.length - 1]._id;
+      lastMessage.current = body[body.length - 1]._id;*/
 
     waitingOnReply.current = false;
     setInputReady(validateInput());
@@ -254,22 +288,32 @@ const Chat = ({ user }: ChatProps) => {
         * Message display
         * */}
       <div id="messages" ref={messageAreaRef}>
-      {messages.length !== 0 ? (
-        messages.map((message, _index) => (
-          <div key={message["_id"]} className={message.role === "user" ? "user" : "agent"}>
-            <p className="message--time">
-              {getDisplay(message["timestamp"])}
-            </p>
+      {messages.length !== 0 || status ? (
+        <>
+          {messages.map((message, _index) => (
+            <div key={message["_id"]} className={message.role === "user" ? "user" : "agent"}>
+              <p className="message--time">
+                {getDisplay(message["timestamp"])}
+              </p>
 
-            <p className="message--content" style={{ whiteSpace: "pre-line" }}>
-              {message["content_type"] === "text" ? (
-                message["content"]
-              ) : (
-                <img src={message["imageuri"]!} />
-              )}
-            </p>
-          </div>
-        ))
+              <p className="message--content" style={{ whiteSpace: "pre-line" }}>
+                {message["content_type"] === "text" ? (
+                  message["content"]
+                ) : (
+                  <img src={message["imageuri"]!} />
+                )}
+              </p>
+            </div>
+          ))}
+
+          {status && (
+            <div className={"agent"}>
+              <p className="message--status" style={{ whiteSpace: "pre-line" }}>
+                {status}
+              </p>
+            </div>
+          )}
+        </>
       ) : waitingOnMessages.current ? (
         <p id="messages--empty">Loading history...</p>
       ) : (
