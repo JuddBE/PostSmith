@@ -7,7 +7,7 @@ import pydantic
 import tempfile
 
 from x import post_twitter
-from reddit import reddit_post_text, reddit_query_subreddits
+from reddit import reddit_post_text, reddit_post_image, reddit_query_subreddits
 from models import PrivateUser, Message
 from db import chats, users
 
@@ -67,44 +67,51 @@ image_client = AzureOpenAI(
 async def call_function(user, output):
     try:
         args = json.loads(output.arguments)
-        if output.name == "publish_tweet":
-            text = args.get("post_text")
-            images = args.get("post_images")
-            if text == None:
-                return "Missing post text, try again later."
+        match output.name:
+            case "publish_tweet":
+                text = args.get("post_text")
+                images = args.get("post_images")
+                if text == None:
+                    return "Missing post text, try again later."
 
-            return await post_twitter(user, text, images)
-        elif output.name == "reddit_post_text":
-            subreddit = args.get("subreddit")
-            title = args.get("post_title")
-            text = args.get("post_text")
+                return await post_twitter(user, text, images)
+            case "reddit_post_text":
+                subreddit = args.get("subreddit")
+                title = args.get("post_title")
+                text = args.get("post_text")
 
-            return reddit_post_text(user, subreddit, title, text)
-        elif output.name == "reddit_search_subreddits":
-            query = args.get("query")
+                return reddit_post_text(user, subreddit, title, text)
+            case "reddit_post_image":
+                subreddit = args.get("subreddit")
+                title = args.get("post_title")
+                image = args.get("post_image")
 
-            return reddit_query_subreddits(user, query)
-        elif output.name == "generate_image":
-            prompt = args.get("prompt")
+                return reddit_post_image(user, subreddit, title, image)
+            case "reddit_search_subreddits":
+                query = args.get("query")
 
-            # Call image generation
-            img_response = image_client.images.generate(
-                model=IMAGE_DEPLOYMENT,
-                prompt=prompt,
-                n=1,
-                size="1024x1024",
-                quality="standard",
-                response_format="b64_json"
-            )
+                return reddit_query_subreddits(user, query)
+            case "generate_image":
+                prompt = args.get("prompt")
 
-            # Get image data TODO: CHECK THIS WORKS!!!
-            image_b64 = json.loads(img_response.model_dump_json())['data'][0]['b64_json']
-            data_url = f"data:image/png;base64,{image_b64}"
+                # Call image generation
+                img_response = image_client.images.generate(
+                    model=IMAGE_DEPLOYMENT,
+                    prompt=prompt,
+                    n=1,
+                    size="1024x1024",
+                    quality="standard",
+                    response_format="b64_json"
+                )
 
-            # Return as data URL
-            return ("image", data_url)
-        else:
-            return "Bad function name."
+                # Get image data TODO: CHECK THIS WORKS!!!
+                image_b64 = json.loads(img_response.model_dump_json())['data'][0]['b64_json']
+                data_url = f"data:image/png;base64,{image_b64}"
+
+                # Return as data URL
+                return ("image", data_url)
+            case _:
+                return "Bad function name."
     except Exception as e:
         return "Failed to call function, " + str(e)
 
@@ -191,6 +198,28 @@ async def ai_chat(user: PrivateUser):
             },
             {
                 "type": "function",
+                "name": "reddit_post_image",
+                "description": ("Make a image-based post to Reddit. "
+                                "Needs explicit user confirmation about the parameters"),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "subreddit": {
+                            "type": "string",
+                            "description": "The subreddit to be posted to. do not include the 'r/' or 'u/'"
+                        },
+                        "post_title": {"type": "string"},
+                        "post_image": {
+                            "type": "integer",
+                            "description": ("An image index that the user wants to post. Must be "
+                                "from a previously generated or uploaded image.")
+                        },
+                    },
+                    "required": ["subreddit", "post_title", "post_image"],
+                }
+            },
+            {
+                "type": "function",
                 "name": "reddit_search_subreddits",
                 "description": "Search for the top subreddits under a given query.",
                 "parameters": {
@@ -249,6 +278,7 @@ async def ai_chat(user: PrivateUser):
         description = await ai_describe(response[1])
         index = len(user.images)
         users.update_one({"_id": user.id}, {"$push": {"images": response[1]}})
+        user.images.append(response[1])
 
         # Format for an image description/submission
         message = Message(

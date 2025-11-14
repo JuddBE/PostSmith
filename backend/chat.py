@@ -28,6 +28,7 @@ async def send(request: SendRequest,
         description = await ai_describe(request.imageuri)
         index = len(user.images)
         users.update_one({"_id": user.id}, {"$push": {"images": request.imageuri}})
+        user.images.append(request.imageuri)
 
         # Format image message
         message = Message(

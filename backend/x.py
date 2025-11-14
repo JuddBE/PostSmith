@@ -10,7 +10,7 @@ import logging
 import os
 import time
 
-from tools import uri_to_file
+from tools import image_to_file
 from auth import authenticate
 from models import ProtectedUser, PrivateUser
 from db import users, get_user
@@ -90,10 +90,6 @@ async def x_get_token(user: PrivateUser):
 
 
 async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[List[str]] = None):
-    print("image indices", image_indices)
-    #print(list(map(uri_to_file, image_indices)))
-    return "Temp debug message"
-
     # Get the access token
     if user.x_access_token == None:
         return "To post to twitter, first link your account in the settings panel."
@@ -101,11 +97,41 @@ async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[Lis
     if access_token == None:
         return "Your twitter login expired. To post, relink your account in the settings."
 
+    # Handle any images
+    media = []
+    if image_indices:
+        try:
+            files = [image_to_file(user, image) for image in image_indices]
+            for file in files:
+                if file[0] == 1:
+                    return "Failed to post to twitter: " + file[1]
+
+                with open(file[1], "rb") as f:
+                    response = await x_oauth.post(
+                        "https://upload.twitter.com/1.1/media/upload.json",
+                        token={"access_token": access_token, "token_type": "oauth1"},
+                        files = {"media": (file[1], f)}
+                    )
+                    print(await response.text())
+                    response.raise_for_status()
+                json = await response.json()
+                print(json)
+                media.append(json["media_id_string"])
+                os.remove(file[1])
+        except Exception as e:
+            logging.error("Failed to upload medias to Twitter. %s", e)
+            return "Internal error, failed to upload image(s) to twitter"
+
+
+
     # Make the post
+    body = {"text": text}
+    if len(media) != 0:
+        body["media"] = { "media_ids": media }
     response = await x_oauth.post(
         "https://api.twitter.com/2/tweets",
         token={"access_token": access_token, "token_type": "bearer"},
-        json={"text": text}
+        json=body
     )
 
     # Ensure succeeded

@@ -10,6 +10,7 @@ import os
 import praw
 import time
 
+from tools import image_to_file
 from auth import authenticate
 from models import ProtectedUser, PrivateUser
 from db import users, get_user
@@ -55,6 +56,30 @@ def reddit_post_text(user, subreddit, title, content):
             return "Failed to post. " + str(e)
         except:
             return "Failed to post. Maybe a bad subreddit."
+
+def reddit_post_image(user, subreddit, title, image):
+    try:
+        file = image_to_file(user, image)
+        if file[0] == 1:
+            raise Exception(file[1])
+
+        reddit = praw.Reddit(
+            client_id=REDDIT_CLIENT_ID,
+            client_secret=REDDIT_CLIENT_SECRET,
+            refresh_token=user.r_refresh_token,
+            user_agent=REDDIT_USER_AGENT
+        )
+
+        post = reddit.subreddit(subreddit).submit_image(title=title, image_path=file[1])
+        os.remove(file[1])
+        return "Posted to Reddit! View your post here: " + post.url
+    except Exception as e:
+        logging.error(e)
+        try:
+            return "Failed to post. " + str(e)
+        except:
+            return "Failed to post. Maybe a bad subreddit."
+
 
 def reddit_query_subreddits(user, query):
     try:
