@@ -144,7 +144,7 @@ async def ai_describe(imageuri):
 
 async def ai_chat(user: PrivateUser):
     # Get a list of system descr, then history of conversation, then the new user message
-    yield "Recalling..."
+    yield "Recalling"
     history = chats.find(
             {"user_id": user.id}, {"_id": 0, "role": 1, "content": 1}
     ).sort("_id")
@@ -156,7 +156,7 @@ async def ai_chat(user: PrivateUser):
         ],
     ]
 
-    yield "Thinking..."
+    yield "Thinking"
     response = client.responses.create(
         model=CHAT_DEPLOYMENT,
         input=messages,
@@ -264,7 +264,7 @@ async def ai_chat(user: PrivateUser):
 
     # Forward to processor
     if output.type == "function_call":
-        yield "Using tool..."
+        yield "Using tool"
         response = await call_function(user, output)
     else:
         response = output.content[0].text
@@ -281,7 +281,7 @@ async def ai_chat(user: PrivateUser):
     # Image generation
     elif response[0] == "image":
         # Get a description of the image
-        yield "Processing generated image..."
+        yield "Processing generated image"
         description = await ai_describe(response[1])
         index = len(user.images)
         users.update_one({"_id": user.id}, {"$push": {"images": response[1]}})

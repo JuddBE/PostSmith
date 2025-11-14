@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import './App.css'
 
+import { PropagateLoader } from "react-spinners";
+
 import Auth from './components/Auth'
 import Chat from './components/Chat'
 import X from './components/OAuth/X'
@@ -46,7 +48,7 @@ function App() {
 
   // Waiting on response
   if (loading) {
-    return (<h2>Loading...</h2>);
+    return (<PropagateLoader color="#2a2b45" />);
   }
 
   // App routing

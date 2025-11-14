@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { PropagateLoader } from "react-spinners";
 
 type XProps = {
   user: {[key: string]: string};
@@ -32,7 +33,7 @@ const X = ({ user }: XProps) => {
       upload();
   }, [token, token_secret, username]);
 
-  return (<h2>Linking account...</h2>);
+  return (<PropagateLoader color="#2a2b45" />);
 };
 
 export default X;

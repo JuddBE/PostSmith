@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { PropagateLoader } from "react-spinners";
 
 type RedditProps = {
   user: {[key: string]: string};
@@ -30,7 +31,7 @@ const Reddit = ({ user }: RedditProps) => {
       upload();
   }, [refresh_token]);
 
-  return (<h2>Linking account...</h2>);
+  return (<PropagateLoader color="#2a2b45" />);
 };
 
 export default Reddit;

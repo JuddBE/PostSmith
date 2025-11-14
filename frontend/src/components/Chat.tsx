@@ -5,12 +5,14 @@ import {
   InputAdornment,
   TextField
 } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
-import ImageIcon from "@mui/icons-material/Image";
 import CloseIcon from '@mui/icons-material/Close';
+import ImageIcon from "@mui/icons-material/Image";
 import SendIcon from "@mui/icons-material/Send";
-import Settings from "./Settings";
+import SettingsIcon from "@mui/icons-material/Settings";
 
+import { DotLoader, PropagateLoader, PulseLoader } from "react-spinners";
+
+import Settings from "./Settings";
 import "./Chat.css";
 
 
@@ -44,31 +46,30 @@ type Image = {
  * */
 const Chat = ({ user, setUser }: ChatProps) => {
   // States variables
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [image, setImage] = useState<Image | undefined>(undefined);
   const [open, setOpen] = useState<boolean>(false);
-  const [status, setStatus] = useState("");
-  const lastMessage = useRef<string | null>(null);
-  const waitingOnReply = useRef(false);
-  const waitingOnMessages = useRef(false);
+
+  // Waiting states
+  const [pendingMessages, setPendingMessages] = useState(true);
+  const [pendingReply, setPendingReply] = useState(false);
+
+  // Scrolling state
   const scrollLocked = useRef(true);
-  const fullyLoaded = useRef(false);
 
-
+  // Messages state
+  const [status, setStatus] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
   const messageAreaRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Input state
+  const [image, setImage] = useState<Image | undefined>(undefined);
   const [input, setInput] = useState("");
-  const [inputReady, setInputReady] = useState(true);
 
-  // Get recent messages
+  // Pull message history
   const getMessages = async () => {
-    if (fullyLoaded.current || waitingOnMessages.current)
-      return;
-    waitingOnMessages.current = true;
+    setPendingMessages(true)
 
-    const options = lastMessage.current ? "?start=" + lastMessage.current : "";
-    const response = await fetch("/api/chat/messages" + options, {
+    const response = await fetch("/api/chat/messages", {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${user["token"]}`,
@@ -78,39 +79,21 @@ const Chat = ({ user, setUser }: ChatProps) => {
 
     if (response.status == 200) {
       if (body.length !== 0) {
-        lastMessage.current = body[body.length - 1]._id;
         setMessages((previous) => {
           return [...body, ...previous]
         });
-      } else {
-        fullyLoaded.current = true;
       }
     } else {
       alert("Bad connection");
     }
-    waitingOnMessages.current = false;
+    setPendingMessages(false)
   };
   useEffect(() => {
     getMessages();
   }, []);
 
 
-  // Scroll lock, auto load
-  const onScroll = () => {
-    const area = messageAreaRef.current;
-    if (area === null)
-      return;
-
-    // If near top, load more
-    //if (area.scrollTop < 2 * area.clientHeight || area.scrollHeight <= area.clientHeight)
-      //getMessages();
-
-    // If near bottom, follow it
-    const bottom = area.scrollHeight - area.clientHeight;
-    scrollLocked.current = bottom - area.scrollTop < .3 * area.clientHeight;
-  };
-
-  // Bind on scroll
+  // Bind scroll listener
   useEffect(() => {
     const area = messageAreaRef.current;
     if (area === null)
@@ -121,40 +104,48 @@ const Chat = ({ user, setUser }: ChatProps) => {
 
     // Handle listener
     area.addEventListener("scroll", onScroll);
-    return () => area.removeEventListener("scroll", onScroll);
-  }, []);
+    return () => area?.removeEventListener("scroll", onScroll);
+  }, [messageAreaRef.current]);
+  // Scroll lock, auto scroll down on messages
+  const onScroll = () => {
+    const area = messageAreaRef.current;
+    if (area === null)
+      return;
 
-
-  // Scroll to bottom if locked
+    // If near bottom, follow it
+    const bottom = area.scrollHeight - area.clientHeight;
+    scrollLocked.current = bottom - area.scrollTop < .3 * area.clientHeight;
+  };
+  // If locked, scroll to bottom on: message, status, or input
   useEffect(() => {
     const area = messageAreaRef.current;
     if (area === null || !scrollLocked.current)
       return;
     area.scrollTop = area.scrollHeight - area.clientHeight;
-  }, [messages, input]);
+  }, [messages, status, input]);
 
 
-  // Disable button when there is no text
-  const validateInput = () => {
-    return input.trim() !== "" || (image !== undefined && !image.loading);
+  // Check if the user should be able to submit input
+  const inputReady = () => {
+    const hasInput =
+      (input.trim() !== "" && (image === undefined || !image.loading))
+      || (image && !image.loading);
+    return hasInput && !pendingReply;
   };
-  useEffect(() => {
-    if (waitingOnReply.current || (!image || !image.loading))
-      return;
-    setInputReady(validateInput());
-  }, [waitingOnReply.current, input, image, image?.loading]);
 
 
   // Submit message to the API
   const sendMessage = async () => {
+    // Validate state
     if (image && image.loading) {
       alert("Input image still loading...");
       return;
+    } else if ((!input.trim() && !image) || pendingReply) {
+      return;
     }
+    setPendingReply(true);
 
-    waitingOnReply.current = true;
-    setInputReady(false);
-
+    // Save and clear fields immediately
     const input_text = input;
     const input_image = image;
     setInput("");
@@ -173,9 +164,8 @@ const Chat = ({ user, setUser }: ChatProps) => {
       })
     });
     if (response.status != 200 || !response.body) {
-      alert("Bad connection");
-      waitingOnReply.current = false;
-      setInputReady(validateInput());
+      alert("Internal server error");
+      setPendingReply(false);
       return;
     }
 
@@ -210,19 +200,11 @@ const Chat = ({ user, setUser }: ChatProps) => {
       }
     }
 
-
-    /*const body = await response.json();
-    setMessages((previous) => {
-      return [...previous, ...body]
-    });
-    if (lastMessage.current === null)
-      lastMessage.current = body[body.length - 1]._id;*/
-
-    waitingOnReply.current = false;
-    setInputReady(validateInput());
+    // Finished, ready for next message
+    setPendingReply(false);
   };
 
-  // Get local time display from UTC string
+  // Get readable time display from UTC string
   const getDisplay = (utc: string) => {
     return (new Date(utc)).toLocaleString("en-US", {
       month: "short",
@@ -237,9 +219,7 @@ const Chat = ({ user, setUser }: ChatProps) => {
     if (e.shiftKey || e.key !== "Enter")
       return;
     e.preventDefault()
-    if (inputReady) {
-      sendMessage();
-    }
+    sendMessage();
   };
 
   const addImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -309,14 +289,18 @@ const Chat = ({ user, setUser }: ChatProps) => {
 
           {status && (
             <div className={"agent"}>
-              <p className="message--status" style={{ whiteSpace: "pre-line" }}>
+              <p className="message--status"
+                  style={{ whiteSpace: "pre-line", width: "40%",
+                    display: "flex", flexDirection: "column",
+                    alignItems: "center", gap: "8px" }}>
                 {status}
+                <PulseLoader color="gray" size={10} />
               </p>
             </div>
           )}
         </>
-      ) : waitingOnMessages.current ? (
-        <p id="messages--empty">Loading history...</p>
+      ) : pendingMessages ? (
+        <p id="messages--empty"><PropagateLoader  color="#1a1a2b"/></p>
       ) : (
         <p id="messages--empty">No messages yet, start your draft!</p>
       )}
@@ -376,15 +360,23 @@ const Chat = ({ user, setUser }: ChatProps) => {
 
         InputProps={{
           startAdornment: (<InputAdornment position="start">
-            <IconButton onClick={callAddImage}>
+            <IconButton onClick={callAddImage} sx={{width:40, height:40, padding:0}}>
               <ImageIcon />
             </IconButton>
           </InputAdornment>),
-          endAdornment: (<InputAdornment position="start">
-            <IconButton onClick={sendMessage}>
-              <SendIcon />
-            </IconButton>
-          </InputAdornment>)
+          endAdornment: !pendingReply ? (
+            <InputAdornment position="start">
+              <IconButton onClick={sendMessage} disabled={!inputReady()} sx={{width:40, height:40, padding:0}}>
+                <SendIcon />
+              </IconButton>
+            </InputAdornment>
+          ) : (
+            <InputAdornment position="start">
+              <IconButton disabled sx={{width:40, height:40, padding:0}}>
+                <DotLoader color="#333" size={20} />
+              </IconButton>
+            </InputAdornment>
+          )
         }}
       />
     </div>

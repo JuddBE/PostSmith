@@ -26,7 +26,7 @@ async def sendProcessor(request: SendRequest, user: PrivateUser):
     # If there was an image input, attempt to push it to the dataset
     if request.imageuri or "" != "":
         # Get a description of the image
-        yield (json.dumps({"status": 1, "message": "Processing input..."}) + "\n").encode()
+        yield (json.dumps({"status": 1, "message": "Processing input"}) + "\n").encode()
         await asyncio.sleep(0)
         description = await ai_describe(request.imageuri)
         index = len(user.images)
