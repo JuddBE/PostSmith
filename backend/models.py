@@ -60,9 +60,8 @@ class ProtectedUser(PublicUser):
 class PrivateUser(ProtectedUser):
     password: str
     seed: str
-    x_access_token: Optional[str] = None
-    x_refresh_token: Optional[str] = None
-    x_expiration: Optional[float] = None
+    x_token: Optional[str] = None
+    x_token_secret: Optional[str] = None
     r_refresh_token: Optional[str] = None
 
 

@@ -6,9 +6,8 @@ type XProps = {
 };
 const X = ({ user }: XProps) => {
   const [params] = useSearchParams();
-  const access_token = params.get("access_token");
-  const refresh_token = params.get("refresh_token");
-  const expires_at = params.get("expires_at");
+  const token = params.get("token");
+  const token_secret = params.get("token_secret");
   const username = params.get("username");
 
   useEffect(() => {
@@ -20,19 +19,18 @@ const X = ({ user }: XProps) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          "access_token": access_token,
-          "refresh_token": refresh_token,
-          "expires_at": expires_at,
-          "username": username
+          "token": token,
+          "token_secret": token_secret,
+          "username": username,
         })
       });
 
       window.location.href = "/";
     };
 
-    if (access_token)
+    if (token && token_secret && username)
       upload();
-  }, [access_token]);
+  }, [token, token_secret, username]);
 
   return (<h1>Loading...</h1>);
 };

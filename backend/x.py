@@ -6,9 +6,11 @@ from httpx import AsyncClient
 from pydantic import BaseModel
 from typing import Optional, List
 import base64
+import datetime
 import logging
 import os
 import time
+import tweepy
 
 from tools import image_to_file
 from auth import authenticate
@@ -25,98 +27,47 @@ oauth = OAuth()
 # X OAUTH
 x_oauth = oauth.register(
     name="oauth",
-    client_id=os.getenv("X_CLIENT_ID"),
-    client_secret=os.getenv("X_CLIENT_SECRET"),
-    access_token_url="https://api.twitter.com/2/oauth2/token",
-    access_token_params=None,
-    authorize_url="https://twitter.com/i/oauth2/authorize",
-    authorize_params=None,
-    api_base_url="https://api.twitter.com/2/",
-    client_kwargs={
-        "scope": "tweet.write tweet.read users.read offline.access",
-        "token_endpoint_auth_method": "client_secret_basic",
-        "code_challenge_method": "S256"
-    }
+    client_id=os.getenv("X_CONSUMER_KEY"),
+    client_secret=os.getenv("X_CONSUMER_SECRET"),
+    access_token_url="https://api.twitter.com/oauth/access_token",
+    authorize_url="https://api.twitter.com/oauth/authorize",
+    request_token_url="https://api.twitter.com/oauth/request_token",
+    api_base_url="https://api.twitter.com/1.1/",
 )
 
 # Utils
-async def x_get_token(user: PrivateUser):
-    # Doesn't need a refresh
-    # change to or
-    if user.x_expiration == None or time.time() < user.x_expiration - 30:
-        return user.x_access_token
-
-    # Attempt refresh
-    try:
-        async with AsyncClient() as client:
-            auth_header = base64.b64encode(
-                f"{x_oauth.client_id}:{x_oauth.client_secret}".encode()
-            ).decode()
-
-            response = await client.post(
-                x_oauth.access_token_url,
-                data={
-                    "grant_type": "refresh_token",
-                    "refresh_token": user.x_refresh_token,
-                },
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Authorization": f"Basic {auth_header}"
-                },
-            )
-            response.raise_for_status()
-        token = response.json()
-        users.update_one(
-            {"_id": user.id},
-            {"$set": {
-                "x_access_token": token["access_token"],
-                "x_expiration": token["expires_at"]
-            }}
-        )
-
-        return token["access_token"]
-    except Exception as e:
-        print(e)
-        users.update_one(
-            {"_id": user.id},
-            {"$unset": {
-                "x_username": 1,
-                "x_access_token": 1,
-                "x_refresh_token": 1,
-                "x_expiration": 1
-            }}
-        )
-        return None
-
-
 async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[List[str]] = None):
     # Get the access token
-    if user.x_access_token == None:
+    if user.x_token == None:
         return "To post to twitter, first link your account in the settings panel."
-    access_token = await x_get_token(user)
-    if access_token == None:
-        return "Your twitter login expired. To post, relink your account in the settings."
+
+    # Create client
+    client = tweepy.Client(
+                    consumer_key=os.getenv("X_CONSUMER_KEY"),
+                    consumer_secret=os.getenv("X_CONSUMER_SECRET"),
+                    access_token=user.x_token,
+                    access_token_secret=user.x_token_secret
+            )
 
     # Handle any images
     media = []
     if image_indices:
+        api = tweepy.API(
+                tweepy.OAuth1UserHandler(
+                    os.getenv("X_CONSUMER_KEY"),
+                    os.getenv("X_CONSUMER_SECRET"),
+                    user.x_token,
+                    user.x_token_secret
+                ),
+                wait_on_rate_limit=False
+            )
         try:
             files = [image_to_file(user, image) for image in image_indices]
             for file in files:
                 if file[0] == 1:
                     return "Failed to post to twitter: " + file[1]
-
-                with open(file[1], "rb") as f:
-                    response = await x_oauth.post(
-                        "https://upload.twitter.com/1.1/media/upload.json",
-                        token={"access_token": access_token, "token_type": "oauth1"},
-                        files = {"media": (file[1], f)}
-                    )
-                    print(await response.text())
-                    response.raise_for_status()
-                json = await response.json()
-                print(json)
-                media.append(json["media_id_string"])
+                media.append(api.media_upload(filename=file[1]).media_id_string)
+                print(media)
                 os.remove(file[1])
         except Exception as e:
             logging.error("Failed to upload medias to Twitter. %s", e)
@@ -125,28 +76,21 @@ async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[Lis
 
 
     # Make the post
-    body = {"text": text}
-    if len(media) != 0:
-        body["media"] = { "media_ids": media }
-    response = await x_oauth.post(
-        "https://api.twitter.com/2/tweets",
-        token={"access_token": access_token, "token_type": "bearer"},
-        json=body
+    try:
+        if len(media) != 0:
+            response = client.create_tweet(text=text, media_ids=media)
+        else:
+            response = client.create_tweet(text=text)
+    except tweepy.TooManyRequests as e:
+        reset = datetime.datetime.fromtimestamp(ereset_time)
+        return "Failed to post, rate limit reached. Reset at: " + reset
+    except Exception as e:
+        return "Failed to post: " + str(e)
+
+    return (
+        "Posted to X! View your tweet here: "
+        f"https://x.com/{user.x_username}/status/{response.data['id']}"
     )
-
-    # Ensure succeeded
-    if response.status_code != 201:
-        return "Failed to post with error: " + response.text
-
-    data = response.json().get("data", {})
-    tid = data.get("id")
-    if tid:
-        return (
-            "Posted to X! View your tweet here: "
-            f"https://x.com/{user.x_username}/status/{tid}"
-        )
-    else:
-        return "Posted to X!"
 
 
 # Routes
@@ -161,33 +105,29 @@ async def x_callback(request: Request):
     base = str(request.base_url).rstrip("/")
     try:
         token = await x_oauth.authorize_access_token(request)
-        user = await x_oauth.get("users/me", token=token)
     except Exception as e:
         logging.error("callback error", e)
         return RedirectResponse(f"{base}/")
 
     frontend_uri = (
             f"{base}/oauth/x"
-            f"?access_token={token['access_token']}"
-            f"&refresh_token={token['refresh_token']}"
-            f"&expires_at={token['expires_at']}"
-            f"&username={user.json()['data']['username']}"
+            f"?token={token['oauth_token']}"
+            f"&token_secret={token['oauth_token_secret']}"
+            f"&username={token['screen_name']}"
     )
     return RedirectResponse(frontend_uri)
 
 class SaveRequest(BaseModel):
-    access_token: str
-    refresh_token: str
+    token: str
+    token_secret: str
     username: str
-    expires_at: float
 @router.post("/save")
 async def x_save(request: SaveRequest, user: PrivateUser = Depends(authenticate)):
     users.update_one(
         {"_id": user.id},
         {"$set": {
-            "x_access_token": request.access_token,
-            "x_refresh_token": request.refresh_token,
-            "x_expiration": request.expires_at,
+            "x_token": request.token,
+            "x_token_secret": request.token_secret,
             "x_username": request.username
         }}
     )
