@@ -67,7 +67,6 @@ async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[Lis
                 if file[0] == 1:
                     return "Failed to post to twitter: " + file[1]
                 media.append(api.media_upload(filename=file[1]).media_id_string)
-                print(media)
                 os.remove(file[1])
         except Exception as e:
             logging.error("Failed to upload medias to Twitter. %s", e)

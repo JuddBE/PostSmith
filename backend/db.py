@@ -11,7 +11,6 @@ db = client["main"]
 users = db["users"]
 chats = db["chats"]
 
-
 # Default filter sensitive data
 def get_user(query):
     data = users.find_one(query)

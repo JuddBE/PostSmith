@@ -52,7 +52,7 @@ class ProtectedUser(PublicUser):
     email: str
     x_username: Optional[str] = None
     r_username: Optional[str] = None
-    images: List[str] = []
+    images: int = 0
 
 
 # Contains restricted information that should be used
@@ -72,4 +72,5 @@ class Message(MongoBaseModel):
     content_type: str
     content: str
     imageuri: Optional[str] = None
+    image_id: Optional[int] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)

@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from openai import AzureOpenAI
+from pymongo import ReturnDocument
 from typing import Optional, List
 import json
 import os
@@ -123,24 +124,27 @@ async def call_function(user, output):
 
 
 async def ai_describe(imageuri):
-    response = client.responses.create(
-            model=DESCRIBE_DEPLOYMENT,
-            input=[
-                {
-                    "role": "system",
-                    "content": ("You are a visual analyst. Describe and interpret any image "
-                        "you receive clearly and accurately.")
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": "Describe this image in detail."},
-                        {"type": "input_image", "image_url": imageuri}
-                    ]
-                }
-            ],
-        )
-    return response.output[0].content[0].text
+    try:
+        response = client.responses.create(
+                model=DESCRIBE_DEPLOYMENT,
+                input=[
+                    {
+                        "role": "system",
+                        "content": ("You are a visual analyst. Describe and interpret any image "
+                            "you receive clearly and accurately.")
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "input_text", "text": "Describe this image in detail."},
+                            {"type": "input_image", "image_url": imageuri}
+                        ]
+                    }
+                ],
+            )
+        return response.output[0].content[0].text
+    except:
+        "Unprocessable image"
 
 
 
@@ -285,9 +289,13 @@ async def ai_chat(user: PrivateUser):
         # Get a description of the image
         yield "Processing generated image"
         description = await ai_describe(response[1])
-        index = len(user.images)
-        users.update_one({"_id": user.id}, {"$push": {"images": response[1]}})
-        user.images.append(response[1])
+
+        # Increment the image count and get the index for this new image
+        index = users.find_one_and_update(
+                {"_id": user.id},
+                {"$inc": {"images": 1}},
+                return_document=ReturnDocument.AFTER
+        )["images"] - 1
 
         # Format for an image description/submission
         yield Message(
@@ -295,6 +303,7 @@ async def ai_chat(user: PrivateUser):
                 role="assistant",
                 content_type="image",
                 content=f"<IMAGE index={index}>\ntext_description: {description}\n</IMAGE>",
-                imageuri=response[1]
+                imageuri=response[1],
+                image_id=index
             )
     return

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from pymongo import ReturnDocument
 from typing import List, Optional
 import asyncio
 import json
@@ -11,6 +12,7 @@ from auth import authenticate
 from models import PrivateUser, Message
 from ai import ai_chat, ai_describe
 from db import chats, users
+from tools import resize_image
 
 
 # Define router
@@ -28,10 +30,19 @@ async def sendProcessor(request: SendRequest, user: PrivateUser):
         # Get a description of the image
         yield (json.dumps({"status": 1, "message": "Processing input"}) + "\n").encode()
         await asyncio.sleep(0)
-        description = await ai_describe(request.imageuri)
-        index = len(user.images)
-        users.update_one({"_id": user.id}, {"$push": {"images": request.imageuri}})
-        user.images.append(request.imageuri)
+
+        # Downscale to 1024x1024 if needed
+        imageuri = resize_image(request.imageuri)
+
+        # Get description
+        description = await ai_describe(imageuri)
+
+        # Increment the image count and get the index for this new image
+        index = users.find_one_and_update(
+                {"_id": user.id},
+                {"$inc": {"images": 1}},
+                return_document=ReturnDocument.AFTER
+        )["images"] - 1
 
         # Format image message
         message = Message(
@@ -39,7 +50,8 @@ async def sendProcessor(request: SendRequest, user: PrivateUser):
                 role="user",
                 content_type="image",
                 content=f"<IMAGE index={index}>\ntext_description: {description}\n</IMAGE>",
-                imageuri=request.imageuri
+                imageuri=imageuri,
+                image_id=index
             )
 
         # Push to database
@@ -96,7 +108,7 @@ async def send(request: SendRequest,
 @router.post("/clear")
 async def clear(user: PrivateUser = Depends(authenticate)):
     chats.delete_many({"user_id": user.id});
-    users.update_one({"_id": user.id}, {"$set": {"images": []}})
+    users.update_one({"_id": user.id}, {"$set": {"images": 0}})
 
 @router.get("/messages")
 async def get(start: str = None, limit: int = 50,
