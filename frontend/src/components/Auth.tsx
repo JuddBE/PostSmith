@@ -80,8 +80,8 @@ const Auth = ({ setToken } : AuthProps) => {
   if (login) {
     // Display a login screen
     return (
-      <div>
-        <form onSubmit={subLogin}>
+      <div id="auth--panel">
+        <form onSubmit={subLogin} id="auth--form">
           <h1>Login</h1>
           <input type="email" value={email} placeholder="Email" required
             onChange={(e) => setEmail(e.target.value)} />
@@ -97,8 +97,8 @@ const Auth = ({ setToken } : AuthProps) => {
   } else {
     // Display a registration screen
     return (
-      <div>
-        <form onSubmit={subRegistration}>
+      <div id="auth--panel">
+        <form onSubmit={subRegistration} id="auth--form">
           <h1>Register</h1>
           <input type="email" value={email} placeholder="Email" required
             onChange={(e) => setEmail(e.target.value)} />

@@ -1,11 +1,14 @@
 // import { useEffect, useState, useRef } from 'react';
 import React from "react";
 import {
-  Modal, Box, Typography, IconButton, Button
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Button
 } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import CloseIcon from '@mui/icons-material/Close';
 import LogOutIcon from '@mui/icons-material/DoorBackOutlined';
 import DeleteIcon from '@mui/icons-material/DeleteForeverOutlined';
+
 
 import "./Settings.css"
 
@@ -18,6 +21,9 @@ type SettingsProps = {
 };
 
 const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const close = () => setOpen(false);
   const x_login = () => {
     window.location.href="/api/oauth/x/login";
@@ -67,82 +73,67 @@ const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
     window.location.reload();
   };
 
-  return (<Modal open={open} onClose={close} aria-labelledby="modal--title">
-    <Box sx={{
-      position: "absolute" as "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 400,
-      maxHeight: "50%",
-      overflowY: "auto",
-      bgcolor: "#2a2b45",
-      borderRadius: 2,
-      boxShadow: 24,
-      p: 6,
-      display: "flex",
-      flexDirection: "column",
-      gap: 2
-    }}>
-    <IconButton sx={{
-        position: "absolute" as "absolute",
-        top: "5px",
-        right: "5px",
-        padding: "6px",
-        backgroundColor: "rgba(255,255,255,0.1)"
-        }} onClick={close}>
-      <CloseIcon /></IconButton>
-    <Typography id="modal--title" component="h2" gutterBottom>
-      Settings</Typography>
+  return (
+    <Dialog open={open} onClose={close} fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            bgcolor: "#2a2b45", borderRadius: isMobile ? 0 : 2, p: 4, color: "#fff"
+          }
+        }}>
+      <DialogTitle sx={{
+            position: "relative", pb: 1, display: "flex", alignItems: "center",
+            flexDirection: "row", justifyContent: "space-between"
+          }}>
+        Settings
+        <IconButton edge="end" sx={{backgroundColor: "rgba(255,255,255,0.1)"}}
+            onClick={close}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
 
-    <Typography component="h4" gutterBottom>Linked APIS</Typography>
-    {
-      !user.x_username ? (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={x_login}
-          >Link Twitter</Button>
-      ) : (
-        <Button
-          variant="contained"
-          color="warning"
-          onClick={x_unlink}
-          >Unlink Twitter</Button>
-      )
-    }
-    {
-      !user.r_username ? (
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={reddit_login}
-          >Link Reddit</Button>
-      ) : (
-        <Button
-          variant="contained"
-          color="warning"
-          onClick={reddit_unlink}
-          >Unlink Reddit</Button>
-      )
-    }
+      <DialogContent dividers sx={{
+            display: "flex", flexDirection: "column", gap: 2,
+            minWidth: 350, "@media (max-width: 620px)": {
+              minWidth: "100%",
+              padding: "0"
+            }
+          }}>
+        <Typography component="h4" gutterBottom>Linked APIS</Typography>
+        {
+          !user.x_username ? (
+            <Button variant="contained" color="primary" onClick={x_login}
+              >Link Twitter</Button>
+          ) : (
+            <Button variant="contained" color="warning" onClick={x_unlink}
+              >Unlink Twitter</Button>
+          )
+        }
+        {
+          !user.r_username ? (
+            <Button variant="contained" color="primary" onClick={reddit_login}
+              >Link Reddit</Button>
+          ) : (
+            <Button variant="contained" color="warning" onClick={reddit_unlink}
+              >Unlink Reddit</Button>
+          )
+        }
 
-    <Typography component="h4" gutterBottom>Account Controls</Typography>
-    <Button
-      variant="contained"
-      color="error"
-      startIcon={<DeleteIcon />}
-      onClick={deleteMessages}
-      >Delete all Messages.</Button>
-    <Button
-      variant="contained"
-      color="error"
-      startIcon={<LogOutIcon />}
-      onClick={logout}
-      >Log out.</Button>
-
-    </Box>
-  </Modal>);
+        <Typography component="h4" sx={{ mt: 2 }}>Account Controls</Typography>
+        <Button
+          variant="contained"
+          color="error"
+          startIcon={<DeleteIcon />}
+          onClick={deleteMessages}
+          >Delete all Messages.</Button>
+        <Button
+          variant="contained"
+          color="error"
+          startIcon={<LogOutIcon />}
+          onClick={logout}
+          >Log out.</Button>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 export default Settings;

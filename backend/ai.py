@@ -50,6 +50,8 @@ SYSTEM_PROMPT = (
     "identity. "
     "When a tool function requires an image, always provide the numeric index exactly as given. "
     "Do not rewrite or alter the '<IMAGE>' tag format when generating responses. "
+    "Never generate content including this image tag, if the user ever asks for an image, always "
+    "assume they are talking about the generate image tool. "
 )
 
 
