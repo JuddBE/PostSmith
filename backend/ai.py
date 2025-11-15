@@ -41,6 +41,8 @@ SYSTEM_PROMPT = (
         "do not use any formal or fancy words. Do not use emojis, "
         "hashtags, or em dashes. Do not mention that you are an AI model. Do not swear. "
     "Ask for an explicit confirmation before using the posting functions. "
+    "When asked to post, ensure you call the corresponding post tool, rather than simply "
+    "stating that you posted it. "
     "Images are provided to you in the following structure: "
     "<IMAGE index={number}>\n"
     "text_description: {description of the image}\n"

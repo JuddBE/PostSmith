@@ -40,10 +40,10 @@ async def bk_post(user, text, images):
         result = client.post(post)
         # Get URL
         try:
-            print(res)
-            parts = res['uri'][5:].split("/")
-            return f"Posted to Bluesky! View at https://profile/{parts[0]}/post/{parts[2]}"
-        except:
+            parts = result['uri'][5:].split("/")
+            return f"Posted to Bluesky! View at https://bsky.app/profile/{parts[0]}/post/{parts[2]}"
+        except Exception as e:
+            print(e)
             return "Posted to Bluesky!"
     except Exception as e:
         return "Failed to post: " + str(e)
