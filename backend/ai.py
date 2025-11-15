@@ -249,7 +249,9 @@ async def ai_chat(user: PrivateUser):
                 "name": "generate_image",
                 "description": (
                     "Generate an image from a user prompt. "
-                    "Use when the user asks for a picture, drawing, artwork, or any visual content."
+                    "Use when the user asks for a picture, drawing, artwork, "
+                        "or any visual content. "
+                    "Always generates 1024x1024."
                 ),
                 "parameters": {
                     "type": "object",

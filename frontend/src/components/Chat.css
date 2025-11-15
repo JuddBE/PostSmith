@@ -77,6 +77,9 @@ body {
   width: fit-content;
   margin: 0;
 }
+.message--content {
+  max-width: 100%;
+}
 .agent>.message--content,.message--status {
   background-color: #3c3d5a;
 }
@@ -103,8 +106,11 @@ body {
   overflow-x: auto;
 }
 img {
-  height: 300px;
+  max-height: 300px;
+  max-width: 100%;
+  height: auto;
   width: auto;
+  border-radius: 9px;
 }
 #inputimage>img{
   height: 100px;

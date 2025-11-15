@@ -35,7 +35,6 @@ type Message = {
 
 type Image = {
   loading: boolean;
-  id: string;
   file: File;
   url?: string;
 };
@@ -224,16 +223,19 @@ const Chat = ({ user, setUser }: ChatProps) => {
 
   const addImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
-    if (files.length == 0)
+    if (files.length == 0) {
       return;
+    } else if (files.length > 1) {
+      alert("Can only upload 1 file at a time.");
+      return;
+    }
     const file = files[0]
 
-    const id = crypto.randomUUID();
-    setImage({loading: true, id, file});
+    setImage({loading: true, file});
 
     const reader = new FileReader();
     reader.onload = () => {
-      setImage(prev => prev?.id === id
+      setImage(prev => prev?.file == file
         ? {...prev, url: reader.result as string, loading: false}
         : prev);
     };
@@ -290,7 +292,8 @@ const Chat = ({ user, setUser }: ChatProps) => {
           {status && (
             <div className={"agent"}>
               <p className="message--status"
-                  style={{ whiteSpace: "pre-line", width: "40%",
+                  style={{ whiteSpace: "pre-line",
+                    minWidth: "41%", maxWidth: "65%",
                     display: "flex", flexDirection: "column",
                     alignItems: "center", gap: "8px" }}>
                 {status}
