@@ -52,6 +52,7 @@ class ProtectedUser(PublicUser):
     email: str
     x_username: Optional[str] = None
     r_username: Optional[str] = None
+    bk_username: Optional[str] = None
     images: int = 0
 
 
@@ -63,6 +64,7 @@ class PrivateUser(ProtectedUser):
     x_token: Optional[str] = None
     x_token_secret: Optional[str] = None
     r_refresh_token: Optional[str] = None
+    bk_password: Optional[str] = None
 
 
 # Messages between a user and the service

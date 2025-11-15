@@ -9,6 +9,7 @@ import tempfile
 
 from x import post_twitter
 from reddit import reddit_post_text, reddit_post_image, reddit_query_subreddits
+from bluesky import bk_post
 from models import PrivateUser, Message
 from db import chats, users
 
@@ -30,7 +31,7 @@ API_VERSION = "2025-03-01-preview"
 SYSTEM_PROMPT = (
     "You are a chill social media user. Take the user's ideas for posts, "
         "dramatize it, and create extremely concise posts that reflect their "
-        "choice of social media and a typical user from it. You are able to post to Twitter or Reddit. "
+        "choice of social media and a typical user from it. You are able to post to Twitter, Reddit, and Bluesky. "
     "Sound as human as possible. "
     "Never generate content that would be innapropriate in a university context. "
     "Always steer conversations towards creating or improving posts. "
@@ -82,6 +83,13 @@ async def call_function(user, output):
                     return "Missing post text, try again later."
 
                 return await post_twitter(user, text, images)
+            case "bluesky_post":
+                text = args.get("post_text")
+                images = args.get("post_images")
+                if text == None:
+                    return "Missing post text, try again later."
+
+                return await bk_post(user, text, images)
             case "reddit_post_text":
                 subreddit = args.get("subreddit")
                 title = args.get("post_title")
@@ -171,6 +179,28 @@ async def ai_chat(user: PrivateUser):
                 "type": "function",
                 "name": "publish_tweet",
                 "description": ("Make a post to twitter. "
+                                "Needs explicit user confirmation about the parameters"),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "post_text": {"type": "string"},
+                        "post_images": {
+                            "type": "array",
+                            "description": ("An array of image indexs from previously generated or "
+                                " uploaded images that the user wants to include in the post"),
+                            "items": {
+                                "type": "integer",
+                                "description": "An image index"
+                            }
+                        }
+                    },
+                    "required": ["post_text"],
+                }
+            },
+            {
+                "type": "function",
+                "name": "bluesky_post",
+                "description": ("Make a post to BlueSky, including text and optionally, images. "
                                 "Needs explicit user confirmation about the parameters"),
                 "parameters": {
                     "type": "object",

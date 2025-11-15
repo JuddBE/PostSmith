@@ -53,7 +53,7 @@ def reddit_post_text(user, subreddit, title, content):
     except Exception as e:
         logging.error(e)
         try:
-            return "Failed to post. " + str(e)
+            return "Failed to Reddit, Error: " + str(e)
         except:
             return "Failed to post. Maybe a bad subreddit."
 

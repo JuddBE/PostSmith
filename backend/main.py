@@ -9,6 +9,7 @@ from auth import router as auth_router
 from chat import router as chat_router
 from x import router as x_router
 from reddit import router as r_router
+from bluesky import router as bluesky_router
 
 
 load_dotenv()
@@ -23,6 +24,7 @@ app.include_router(auth_router, prefix="/api/auth")
 app.include_router(chat_router, prefix="/api/chat")
 app.include_router(x_router, prefix="/api/oauth/x")
 app.include_router(r_router, prefix="/api/oauth/reddit")
+app.include_router(bluesky_router, prefix="/api/bk")
 
 
 # Link page service

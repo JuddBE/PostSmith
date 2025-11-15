@@ -1,7 +1,8 @@
 // import { useEffect, useState, useRef } from 'react';
 import React from "react";
+import { useState } from "react";
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Button
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Button, Box, TextField
 } from "@mui/material";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -23,6 +24,10 @@ type SettingsProps = {
 const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [blueskyOpen, setBlueskyOpen] = useState(false);
+  const [bkHandle, setBkHandle] = useState("");
+  const [bkPassword, setBkPassword] = useState("");
+  const [bkSending, setBkSending] = useState(false);
 
   const close = () => setOpen(false);
   const x_login = () => {
@@ -52,6 +57,44 @@ const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
     });
     setUser(prev => {
       const { r_username, ...rest } = prev!;
+      return rest;
+    });
+  };
+  const bluesky_save = async() => {
+    if (!bkHandle || !bkPassword) {
+      alert("Please enter your Bluesky handle and app password.");
+      return;
+    }
+
+    setBkSending(true);
+    await fetch("/api/bk/save", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${user["token"]}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        "username": bkHandle,
+        "password": bkPassword
+      })
+    });
+
+    setUser((prev) => ({
+      ...prev,
+      bk_username: bkHandle
+    }));
+
+    setBkSending(false);
+  };
+  const bluesky_unlink = async () => {
+    await fetch("/api/oauth/bk/unlink", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${user["token"]}`,
+      },
+    });
+    setUser(prev => {
+      const { bk_username, ...rest } = prev!;
       return rest;
     });
   };
@@ -115,6 +158,55 @@ const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
           ) : (
             <Button variant="contained" color="warning" onClick={reddit_unlink}
               >Unlink Reddit</Button>
+          )
+        }
+        {
+          !user.bk_username ? (
+            blueskyOpen ? (
+              <Box display="flex" flexDirection="column" gap={1} sx={{ border: "1px solid #888", borderRadius: 1, p: 2 }}>
+                <Typography variant="subtitle1">Bluesky</Typography>
+                <TextField color="primary" label="Handle"
+                    value={bkHandle} onChange={(e) => setBkHandle(e.target.value)}
+                    sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: '#bbb',
+                      '& fieldset': { borderColor: '#bbb' },
+                      '&:hover fieldset': { borderColor: '#999' }
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#bbb',
+                    }
+                  }}/>
+                <TextField color="primary" label="App Password" type="password"
+                    value={bkPassword} onChange={(e) => setBkPassword(e.target.value)}
+                    sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: '#bbb',
+                      '& fieldset': { borderColor: '#bbb' },
+                      '&:hover fieldset': { borderColor: '#999' }
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: '#bbb',
+                    }
+                  }}/>
+                <Box display="flex" flexDirection="row" gap={1} width="100%">
+                  <Button variant="contained" color="warning" sx={{ flex: 1 }}
+                    onClick={() => setBlueskyOpen(false)}>
+                      Cancel
+                  </Button>
+                  <Button variant="contained" color="primary" sx={{ flex: 1 }}
+                    onClick={bluesky_save} loading={bkSending}>
+                      Save
+                  </Button>
+                </Box>
+              </Box>
+            ) : (
+              <Button variant="contained" color="primary" onClick={() => setBlueskyOpen(true)}
+                >Link Bluesky</Button>
+            )
+          ) : (
+            <Button variant="contained" color="warning" onClick={bluesky_unlink}
+              >Unlink Bluesky</Button>
           )
         }
 

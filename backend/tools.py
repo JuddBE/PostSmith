@@ -7,7 +7,7 @@ import tempfile
 from db import chats
 
 
-def image_to_file(user, index):
+def image_to_file(user, index, small=False):
     if index < 0 or index >= user.images or 0:
         return (1, "Internal error, image index specified outside of valid range")
 
@@ -29,6 +29,15 @@ def image_to_file(user, index):
         data = base64.b64decode(encoded)
         image = Image.open(BytesIO(data))
         image.load()
+
+        # Extra downscaling for Bluesky support
+        if small:
+            largest = max(image.width, image.height)
+            if largest > 480:
+                factor = 480 / largest
+                image = image.resize(
+                        (int(factor * image.width), int(factor * image.height)),
+                        Image.LANCZOS)
 
         # Save to a temp file
         with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp:

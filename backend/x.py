@@ -65,7 +65,7 @@ async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[Lis
             files = [image_to_file(user, image) for image in image_indices]
             for file in files:
                 if file[0] == 1:
-                    return "Failed to post to twitter: " + file[1]
+                    return "Failed upload image(s) to twitter: " + file[1]
                 media.append(api.media_upload(filename=file[1]).media_id_string)
                 os.remove(file[1])
         except Exception as e:
