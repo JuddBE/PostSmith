@@ -87,7 +87,7 @@ const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
     setBkSending(false);
   };
   const bluesky_unlink = async () => {
-    await fetch("/api/oauth/bk/unlink", {
+    await fetch("/api/bk/unlink", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${user["token"]}`,
