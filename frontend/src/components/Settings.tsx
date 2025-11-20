@@ -167,6 +167,7 @@ const Settings = ({ open, setOpen, user, setUser }: SettingsProps) => {
                 <Typography variant="subtitle1">Bluesky</Typography>
                 <TextField color="primary" label="Handle"
                     value={bkHandle} onChange={(e) => setBkHandle(e.target.value)}
+                    placeholder="user.bsky.social"
                     sx={{
                     '& .MuiOutlinedInput-root': {
                       color: '#bbb',
