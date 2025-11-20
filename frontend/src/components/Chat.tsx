@@ -205,7 +205,7 @@ const Chat = ({ user, setUser }: ChatProps) => {
 
   // Get readable time display from UTC string
   const getDisplay = (utc: string) => {
-    return (new Date(utc)).toLocaleString("en-US", {
+    return (new Date(utc + "Z")).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -283,6 +283,7 @@ const Chat = ({ user, setUser }: ChatProps) => {
                 {message["content_type"] === "text" ? (
                   message["content"]
                 ) : (
+                  <p>Generated image:</p>
                   <img src={message["imageuri"]!} />
                 )}
               </p>
