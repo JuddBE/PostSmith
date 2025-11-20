@@ -283,8 +283,10 @@ const Chat = ({ user, setUser }: ChatProps) => {
                 {message["content_type"] === "text" ? (
                   message["content"]
                 ) : (
-                  <p>Generated image:</p>
-                  <img src={message["imageuri"]!} />
+                  <>
+                    <p>Generated image:</p>
+                    <img src={message["imageuri"]!} />
+                  </>
                 )}
               </p>
             </div>
