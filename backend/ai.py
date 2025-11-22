@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from openai import AzureOpenAI
 from pymongo import ReturnDocument
 from typing import Optional, List
+import asyncio
 import json
 import os
 import pydantic
@@ -57,6 +58,128 @@ SYSTEM_PROMPT = (
     "Never generate content including this image tag, if the user ever asks for an image, always "
     "assume they are talking about the generate image tool. "
 )
+chat_tools=[
+    {
+        "type": "function",
+        "name": "publish_tweet",
+        "description": ("Make a post to twitter. "
+                        "Needs explicit user confirmation about the parameters"),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "post_text": {"type": "string"},
+                "post_images": {
+                    "type": "array",
+                    "description": ("An array of image indexs from previously generated or "
+                        " uploaded images that the user wants to include in the post"),
+                    "items": {
+                        "type": "integer",
+                        "description": "An image index"
+                    }
+                }
+            },
+            "required": ["post_text"],
+        }
+    },
+    {
+        "type": "function",
+        "name": "bluesky_post",
+        "description": ("Make a post to BlueSky, including text and optionally, images. "
+                        "Needs explicit user confirmation about the parameters"),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "post_text": {"type": "string"},
+                "post_images": {
+                    "type": "array",
+                    "description": ("An array of image indexs from previously generated or "
+                        " uploaded images that the user wants to include in the post"),
+                    "items": {
+                        "type": "integer",
+                        "description": "An image index"
+                    }
+                }
+            },
+            "required": ["post_text"],
+        }
+    },
+    {
+        "type": "function",
+        "name": "reddit_post_text",
+        "description": ("Make a text-based post to Reddit. "
+                        "Needs explicit user confirmation about the parameters"),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "subreddit": {
+                    "type": "string",
+                    "description": "The subreddit to be posted to. do not include the 'r/' or 'u/'"
+                },
+                "post_title": {"type": "string"},
+                "post_text": {"type": "string"},
+            },
+            "required": ["subreddit", "post_title", "post_text"],
+        }
+    },
+    {
+        "type": "function",
+        "name": "reddit_post_image",
+        "description": ("Make a image-based post to Reddit. "
+                        "Needs explicit user confirmation about the parameters"),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "subreddit": {
+                    "type": "string",
+                    "description": "The subreddit to be posted to. do not include the 'r/' or 'u/'"
+                },
+                "post_title": {"type": "string"},
+                "post_image": {
+                    "type": "integer",
+                    "description": ("An image index that the user wants to post. Must be "
+                        "from a previously generated or uploaded image.")
+                },
+            },
+            "required": ["subreddit", "post_title", "post_image"],
+        }
+    },
+    {
+        "type": "function",
+        "name": "reddit_search_subreddits",
+        "description": "Search for the top subreddits under a given query.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The query for looking for subreddits. Keep this concise."
+                },
+            },
+            "required": ["query"],
+        }
+    },
+    {
+        "type": "function",
+        "name": "generate_image",
+        "description": (
+            "Generate an image from a user prompt. "
+            "Use when the user asks for a picture, drawing, artwork, "
+                "or any visual content. "
+            "Always generates 1024x1024."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "Description of the image to generate"},
+                "style": {
+                    "type": "string",
+                    "description": "Optional artistic style like 'vivid', 'natural', 'sketch', etc.",
+                },
+            },
+            "required": ["prompt"],
+        },
+    },
+]
 
 
 # Create client
@@ -135,7 +258,7 @@ async def call_function(user, output):
 
 async def ai_describe(imageuri):
     try:
-        response = client.responses.create(
+        response = await asyncio.to_thread(client.responses.create,
                 model=DESCRIBE_DEPLOYMENT,
                 input=[
                     {
@@ -173,132 +296,20 @@ async def ai_chat(user: PrivateUser):
     ]
 
     yield "Thinking"
-    response = client.responses.create(
-        model=CHAT_DEPLOYMENT,
-        input=messages,
-        tools=[
-            {
-                "type": "function",
-                "name": "publish_tweet",
-                "description": ("Make a post to twitter. "
-                                "Needs explicit user confirmation about the parameters"),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "post_text": {"type": "string"},
-                        "post_images": {
-                            "type": "array",
-                            "description": ("An array of image indexs from previously generated or "
-                                " uploaded images that the user wants to include in the post"),
-                            "items": {
-                                "type": "integer",
-                                "description": "An image index"
-                            }
-                        }
-                    },
-                    "required": ["post_text"],
-                }
-            },
-            {
-                "type": "function",
-                "name": "bluesky_post",
-                "description": ("Make a post to BlueSky, including text and optionally, images. "
-                                "Needs explicit user confirmation about the parameters"),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "post_text": {"type": "string"},
-                        "post_images": {
-                            "type": "array",
-                            "description": ("An array of image indexs from previously generated or "
-                                " uploaded images that the user wants to include in the post"),
-                            "items": {
-                                "type": "integer",
-                                "description": "An image index"
-                            }
-                        }
-                    },
-                    "required": ["post_text"],
-                }
-            },
-            {
-                "type": "function",
-                "name": "reddit_post_text",
-                "description": ("Make a text-based post to Reddit. "
-                                "Needs explicit user confirmation about the parameters"),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "subreddit": {
-                            "type": "string",
-                            "description": "The subreddit to be posted to. do not include the 'r/' or 'u/'"
-                        },
-                        "post_title": {"type": "string"},
-                        "post_text": {"type": "string"},
-                    },
-                    "required": ["subreddit", "post_title", "post_text"],
-                }
-            },
-            {
-                "type": "function",
-                "name": "reddit_post_image",
-                "description": ("Make a image-based post to Reddit. "
-                                "Needs explicit user confirmation about the parameters"),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "subreddit": {
-                            "type": "string",
-                            "description": "The subreddit to be posted to. do not include the 'r/' or 'u/'"
-                        },
-                        "post_title": {"type": "string"},
-                        "post_image": {
-                            "type": "integer",
-                            "description": ("An image index that the user wants to post. Must be "
-                                "from a previously generated or uploaded image.")
-                        },
-                    },
-                    "required": ["subreddit", "post_title", "post_image"],
-                }
-            },
-            {
-                "type": "function",
-                "name": "reddit_search_subreddits",
-                "description": "Search for the top subreddits under a given query.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "The query for looking for subreddits. Keep this concise."
-                        },
-                    },
-                    "required": ["query"],
-                }
-            },
-            {
-                "type": "function",
-                "name": "generate_image",
-                "description": (
-                    "Generate an image from a user prompt. "
-                    "Use when the user asks for a picture, drawing, artwork, "
-                        "or any visual content. "
-                    "Always generates 1024x1024."
-                ),
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "prompt": {"type": "string", "description": "Description of the image to generate"},
-                        "style": {
-                            "type": "string",
-                            "description": "Optional artistic style like 'vivid', 'natural', 'sketch', etc.",
-                        },
-                    },
-                    "required": ["prompt"],
-                },
-            },
-        ]
-    )
+    try:
+        response = await asyncio.to_thread(client.responses.create,
+            model=CHAT_DEPLOYMENT,
+            input=messages,
+            tools=chat_tools
+        )
+    except Exception as e:
+        yield Message(
+                user_id=user.id,
+                role="assistant",
+                content_type="text",
+                content="Unable to respond right now, try again later. (" + str(e) + ")"
+            )
+        return
 
     output = response.output[0]
 
