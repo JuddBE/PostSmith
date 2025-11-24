@@ -49,7 +49,7 @@ def reddit_post_text(user, subreddit, title, content):
         )
 
         post = reddit.subreddit(subreddit).submit(title=title, selftext=content)
-        return "Posted to Reddit! View your post here: " + post.url
+        return "Posted to Reddit! View your post " + post.url
     except Exception as e:
         logging.error(e)
         try:

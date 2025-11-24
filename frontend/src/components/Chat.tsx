@@ -249,6 +249,13 @@ const Chat = ({ user, setUser }: ChatProps) => {
     setOpen(true);
   };
 
+  const getMessageDisplay = (message: string) => {
+    const regex = /(https:\/\/[^\s]+)/g;
+    return message.split(regex).map((part, i) =>
+        regex.test(part) ? <a key={i} href={part}>here.</a> : part
+    );
+  };
+
   // Visual
   return (
   <>
@@ -281,7 +288,7 @@ const Chat = ({ user, setUser }: ChatProps) => {
 
               <p className="message--content" style={{ whiteSpace: "pre-line" }}>
                 {message["content_type"] === "text" ? (
-                  message["content"]
+                  getMessageDisplay(message["content"])
                 ) : (
                   <>
                     <p>Generated image:</p>

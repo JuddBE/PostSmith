@@ -41,7 +41,7 @@ async def bk_post(user, text, images):
         # Get URL
         try:
             parts = result['uri'][5:].split("/")
-            return f"Posted to Bluesky! View at https://bsky.app/profile/{parts[0]}/post/{parts[2]}"
+            return f"Posted to Bluesky! View your post https://bsky.app/profile/{parts[0]}/post/{parts[2]}"
         except Exception as e:
             print(e)
             return "Posted to Bluesky!"

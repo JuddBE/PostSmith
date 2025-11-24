@@ -87,7 +87,7 @@ async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[Lis
         return "Failed to post: " + str(e)
 
     return (
-        "Posted to X! View your tweet here: "
+        "Posted to X! View your tweet "
         f"https://x.com/{user.x_username}/status/{response.data['id']}"
     )
 
