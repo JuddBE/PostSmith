@@ -50,6 +50,10 @@ class PublicUser(MongoBaseModel):
 # to obtain about themselves.
 class ProtectedUser(PublicUser):
     email: str
+    x_username: Optional[str] = None
+    r_username: Optional[str] = None
+    bk_username: Optional[str] = None
+    images: int = 0
 
 
 # Contains restricted information that should be used
@@ -57,16 +61,18 @@ class ProtectedUser(PublicUser):
 class PrivateUser(ProtectedUser):
     password: str
     seed: str
+    x_token: Optional[str] = None
+    x_token_secret: Optional[str] = None
+    r_refresh_token: Optional[str] = None
+    bk_password: Optional[str] = None
 
 
 # Messages between a user and the service
-class MessageContent(BaseModel):
-    type: str
-    text: Optional[str] = None
-    url: Optional[str] = None
-
 class Message(MongoBaseModel):
     user_id: IdField
     role: str
-    content: List[MessageContent]
+    content_type: str
+    content: str
+    imageuri: Optional[str] = None
+    image_id: Optional[int] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)

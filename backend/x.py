@@ -1,87 +1,145 @@
-import tweepy
-import os
-
+from authlib.integrations.starlette_client import OAuth
 from dotenv import load_dotenv
+from fastapi import APIRouter, Request, Depends
+from fastapi.responses import RedirectResponse
+from httpx import AsyncClient
+from pydantic import BaseModel
+from typing import Optional, List
+import base64
+import datetime
+import logging
+import os
+import time
+import tweepy
 
-# Load env
+from tools import image_to_file
+from auth import authenticate
+from models import ProtectedUser, PrivateUser
+from db import users, get_user
+
+
+# Initialize environment
 load_dotenv()
-
-# Full credentials, mix of v1.1 and v2
-api_key = os.getenv('API_KEY')
-api_secret = os.getenv('API_SECRET')
-access_token = os.getenv('ACCESS_TOKEN')
-access_token_secret = os.getenv('ACCESS_TOKEN_SECRET')
-bearer_token = os.getenv('BEARER_TOKEN')
+router = APIRouter()
+oauth = OAuth()
 
 
-# NOTE: Mix of v1.1 and v2 endpoints, they are still updating
-client = tweepy.Client(bearer_token=bearer_token,
-                            consumer_key=api_key,
-                            consumer_secret=api_secret,
-                            access_token=access_token,
-                            access_token_secret=access_token_secret,
-                            wait_on_rate_limit=False)
+# X OAUTH
+x_oauth = oauth.register(
+    name="oauth",
+    client_id=os.getenv("X_CONSUMER_KEY"),
+    client_secret=os.getenv("X_CONSUMER_SECRET"),
+    access_token_url="https://api.twitter.com/oauth/access_token",
+    authorize_url="https://api.twitter.com/oauth/authorize",
+    request_token_url="https://api.twitter.com/oauth/request_token",
+    api_base_url="https://api.twitter.com/1.1/",
+)
 
-# On rate limit, update database with until reset time
-# Then select a new API st. reset time < current time
+# Utils
+async def post_twitter(user: PrivateUser, text: str, image_indices: Optional[List[str]] = None):
+    # Get the access token
+    if user.x_token == None:
+        return "To post to twitter, first link your account in the settings panel."
 
-# On user post, if they are currently using a valid API, use their token,
-# otherwise have them resign in
+    # Create client
+    client = tweepy.Client(
+                    consumer_key=os.getenv("X_CONSUMER_KEY"),
+                    consumer_secret=os.getenv("X_CONSUMER_SECRET"),
+                    access_token=user.x_token,
+                    access_token_secret=user.x_token_secret
+            )
+
+    # Handle any images
+    media = []
+    if image_indices:
+        api = tweepy.API(
+                tweepy.OAuth1UserHandler(
+                    os.getenv("X_CONSUMER_KEY"),
+                    os.getenv("X_CONSUMER_SECRET"),
+                    user.x_token,
+                    user.x_token_secret
+                ),
+                wait_on_rate_limit=False
+            )
+        try:
+            files = [image_to_file(user, image) for image in image_indices]
+            for file in files:
+                if file[0] == 1:
+                    return "Failed upload image(s) to twitter: " + file[1]
+                media.append(api.media_upload(filename=file[1]).media_id_string)
+                os.remove(file[1])
+        except Exception as e:
+            logging.error("Failed to upload medias to Twitter. %s", e)
+            return "Internal error, failed to upload image(s) to twitter"
 
 
 
-# Functions should just take a ProtectedUser
-def post_on_x(content: str, media_paths: Optional[List[str]] = File(None), reply_tweet_id: str = None, quote_tweet_id: str = None):
-    """Post tweet, quote tweet, or reply to tweet with mandatory text, optional media.
-
-    Args:
-        text (str): Tweet content (280 char max). #TODO: from LLM
-        media_paths: List of paths to media files. # TODO: from image gen
-
-    Returns:
-        Dictionary with tweet details.
-    """
-
-    try: # try to post tweet
-        # Conflict prevention
-        if reply_tweet_id and quote_tweet_id:
-            return {"success": False, "error": "A tweet cannot be both a reply and a quote at the same time."}
-
-        # NOTE: For text-only tweets, there would just be no media_paths in the call.
-        if not media_paths:
-            response = client.create_tweet(text=content, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id)
-            return {"success": True, "tweet_id": response.data['id']}
-
-        # For media tweets, you still need to upload media first and get media_ids
-        # This requires v1.1 API for media upload, then pass media_ids to v2
-        # NOTE: Fixed
-        auth = tweepy.OAuthHandler(api_key, api_secret)
-        auth.set_access_token(access_token, access_token_secret)
-        api_v1 = tweepy.API(auth)
-
-        media_ids = []
-        for path in media_paths:
-            media = api_v1.media_upload(path) # upload media first
-            media_ids.append(media.media_id) # collect media IDs
-
-        response = client.create_tweet(text=content, media_ids=media_ids, in_reply_to_tweet_id=reply_tweet_id, quote_tweet_id=quote_tweet_id) # post tweet with media
-        return {"success": True, "tweet_id": response.data['id']}
-
-    except Exception as e: # grab if errors
-        return {"success": False, "error": str(e)}
-
-def like_tweet(tweet_id: str):
+    # Make the post
     try:
-        user = client.get_me().data.id
-        client.like(user_id=user, tweet_id=tweet_id)
-        return {"status": True, "liked_tweet_id": tweet_id}
+        if len(media) != 0:
+            response = client.create_tweet(text=text, media_ids=media)
+        else:
+            response = client.create_tweet(text=text)
+    except tweepy.TooManyRequests as e:
+        reset = datetime.datetime.fromtimestamp(ereset_time)
+        return "Failed to post, rate limit reached. Reset at: " + reset
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return "Failed to post: " + str(e)
 
-def retweet_tweet(tweet_id: str):
+    return (
+        "Posted to X! View your tweet "
+        f"https://x.com/{user.x_username}/status/{response.data['id']}"
+    )
+
+
+# Routes
+@router.get("/login")
+async def x_login(request: Request):
+    redirect_uri = str(request.url_for("x_callback"))
+    return await x_oauth.authorize_redirect(request, redirect_uri)
+
+
+@router.get("/cb")
+async def x_callback(request: Request):
+    base = str(request.base_url).rstrip("/")
     try:
-        user = client.get_me().data.id
-        client.retweet(user_id=user, tweet_id=tweet_id)
-        return {"status": True, "liked_tweet_id": tweet_id}
+        token = await x_oauth.authorize_access_token(request)
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        logging.error("callback error", e)
+        return RedirectResponse(f"{base}/")
+
+    frontend_uri = (
+            f"{base}/oauth/x"
+            f"?token={token['oauth_token']}"
+            f"&token_secret={token['oauth_token_secret']}"
+            f"&username={token['screen_name']}"
+    )
+    return RedirectResponse(frontend_uri)
+
+class SaveRequest(BaseModel):
+    token: str
+    token_secret: str
+    username: str
+@router.post("/save")
+async def x_save(request: SaveRequest, user: PrivateUser = Depends(authenticate)):
+    users.update_one(
+        {"_id": user.id},
+        {"$set": {
+            "x_token": request.token,
+            "x_token_secret": request.token_secret,
+            "x_username": request.username
+        }}
+    )
+
+
+
+@router.post("/unlink")
+async def x_unlink(user: PrivateUser = Depends(authenticate)):
+    users.update_one(
+        {"_id": user.id},
+        {"$unset": {
+            "x_token": 1,
+            "x_token_secret": 1,
+            "x_username": 1
+        }}
+    )

@@ -1,12 +1,17 @@
 html, body, #root {
+  overflow:hidden;
   height: 100%;
   max-width: 100%;
   margin: 0;
   padding: 0;
 }
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
 
 body {
-  background: #242366;
+  background: #1a1a2b;
 }
 
 #root {
@@ -14,9 +19,10 @@ body {
 }
 
 #pane {
-  background: #13131e;
+  background: #222237;
   width: 80%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -24,6 +30,7 @@ body {
 
 /* Messages. */
 #messages {
+  background: #2a2b45;
   flex: 1;
   justify-content: flex-end;
   overflow-y: auto;
@@ -42,10 +49,10 @@ body {
   max-width: 65%;
 }
 .agent {
-  margin: 8px auto 8px 8px;
+  margin: 16px auto 16px 16px;
 }
 .user {
-  margin: 8px 8px 8px auto;
+  margin: 16px 16px 16px auto;
 }
 .agent>p {
   text-align: left;
@@ -58,10 +65,10 @@ body {
 .message--time {
   user-select: none;
   font-size: 11pt;
-  color: lightgray;
+  color: #b0b0b0;
   margin: 0 10px;
 }
-.message--content {
+.message--content,.message--status {
   background-color: #201F42;
   font-size: 16pt;
   font-weight: 500;
@@ -70,42 +77,56 @@ body {
   width: fit-content;
   margin: 0;
 }
+.message--content {
+  max-width: 100%;
+}
+.agent>.message--content,.message--status {
+  background-color: #3c3d5a;
+}
 .agent>.message--content {
-  background-color: #1D1D2E;
   color: lightgray;
 }
+.message--status {
+  color: darkgray;
+}
 .user>.message--content {
-  background-color: #025bff;
+  background-color: #3399ff;
   color: black;
 }
 
-/* Inputs. */
-#input {
+/* Images. */
+#inputimage {
   display: flex;
   flex-direction: row;
-  padding: 10px 10%;
+  padding: 0px;
+  height: fit-content;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  overflow-x: auto;
 }
-#input>*{
-  margin: 0 10px;
-  padding: 10px;
-  font-size: 14pt;
+img {
+  max-height: 300px;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  border-radius: 9px;
 }
-#input--text {
-  flex: 1;
-  border-radius: 14px;
-  background-color: #242366;
-  border: 2px solid #3432c8;
+#inputimage>img{
+  height: 100px;
+  margin: 10px;
 }
-#input--text:focus {
-  border: 2px solid #d9d9f2;
+.loadingimg {
+  height: 100px;
+  width: 100px;
+  background-color: #505050;
 }
-#input--submit {
-  border-radius: 20px;
-  background-color: #3432c8;
-  padding: 10px 15px;
-  font-size: 20px;
-}
-#input--submit:disabled {
-  background-color: #1D1D2E;
+#input--file {
+  display: none;
 }
 
+@media (max-width: 620px) {
+  #pane {
+    width: 100%;
+  }
+}
