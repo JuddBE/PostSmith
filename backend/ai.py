@@ -10,6 +10,8 @@ import tempfile
 from x import post_twitter
 from reddit import reddit_post_text, reddit_post_image, reddit_query_subreddits
 from bluesky import bk_post
+from linkedin import post_linkedin
+
 from models import PrivateUser, Message
 from db import chats, users
 
@@ -85,6 +87,14 @@ async def call_function(user, output):
                     return "Missing post text, try again later."
 
                 return await post_twitter(user, text, images)
+            
+            case "linkedin_post":
+                text = args.get("post_text")
+                if text == None:
+                    return "Missing post text, try again later."
+
+                return await post_linkedin(user, text)
+
             case "bluesky_post":
                 text = args.get("post_text")
                 images = args.get("post_images")
@@ -297,6 +307,25 @@ async def ai_chat(user: PrivateUser):
                     "required": ["prompt"],
                 },
             },
+            {
+                "type": "function",
+                "name": "linkedin_post",
+                "description": (
+                    "Make a professional text-based post to LinkedIn. "
+                    "Needs explicit user confirmation about the parameters."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "post_text": {
+                            "type": "string",
+                            "description": "The text content of the LinkedIn post."
+                        }
+                    },
+                    "required": ["post_text"],
+                }
+            },
+
         ]
     )
 

@@ -2,3 +2,7 @@ backend/__pycache__/
 api/__pycache__/
 .env
 .reddit_token
+.venv/
+.venv312/
+venv/
+env/

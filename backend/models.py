@@ -65,6 +65,9 @@ class PrivateUser(ProtectedUser):
     x_token_secret: Optional[str] = None
     r_refresh_token: Optional[str] = None
     bk_password: Optional[str] = None
+    linkedin_access_token: Optional[str] = None
+    linkedin_refresh_token: Optional[str] = None
+    linkedin_id: Optional[str] = None
 
 
 # Messages between a user and the service
